@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="application-version" content="1.1.0">
+<meta name="application-version" content="1.2.0">
 <meta name="theme-color" content="#28594a">
 <meta name="description" content="큰 그림으로 천천히 즐기는 어르신 기억·인지활동 카드 놀이. 시간제한과 순위 없이 생활 속 그림의 짝을 찾아보세요.">
 <title>기억꽃 놀이터 | 유원대학교 도서관</title>
@@ -139,6 +139,100 @@ dialog{padding:25px 20px}
 .large-text .level span{font-size:22px}
 }
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{transition:none!important;animation:none!important;scroll-behavior:auto!important}}
+
+/* 1.2: selection and play are separate screens. Only a cramped card board scrolls. */
+#menu-screen{padding-bottom:4px}
+#menu-screen .hero{padding:22px 0 20px}
+#menu-screen h1{font-size:clamp(34px,4.2vw,46px);margin-bottom:10px}
+#menu-screen .hero p:not(.kicker){font-size:20px;line-height:1.5}
+#menu-screen .hero-flower{width:100px}
+#menu-screen .card-panel{padding:22px}
+#menu-screen .choose-title{font-size:24px;line-height:1.35;margin-bottom:14px}
+#menu-screen .field-label{font-size:20px;line-height:1.4;margin-bottom:6px}
+#menu-screen fieldset{margin-top:18px}
+#menu-screen legend{font-size:21px;line-height:1.4;margin-bottom:8px}
+#menu-screen .start-row{margin-top:18px}
+#menu-screen .calm-note{font-size:18px;line-height:1.5;margin-top:12px}
+.large-text #menu-screen .field-label,.large-text #menu-screen legend{font-size:26px}
+.large-text #menu-screen .calm-note,.large-text #menu-screen .hero p:not(.kicker){font-size:24px}
+body.playing{height:100vh;height:100dvh;min-height:0;display:flex;flex-direction:column;overflow:hidden}
+.playing .top{flex:none}
+.playing .top-inner{padding:10px 0}
+.playing #main{display:flex;flex-direction:column;flex:1;min-height:0;padding:12px 0}
+#play-screen{margin:0}
+.playing #play-screen{display:flex;flex-direction:column;flex:1;min-height:0;padding:14px 18px;overflow:hidden}
+.playing .activity-head{flex:none;gap:10px;margin-bottom:8px}
+.play-title{display:flex;align-items:center;gap:14px;min-width:0;flex:1}
+.play-title h2{font-size:1em;line-height:1.35}
+.play-title #finish{flex:none}
+.playing .badge{font-size:17px}
+.playing .progress-row{flex:none;margin-bottom:10px}
+.playing .progress-text{font-size:20px}
+.playing .banner{flex:none;min-height:0;padding:10px 14px;margin-bottom:12px;display:grid;grid-template-columns:minmax(0,1fr) auto}
+.playing .banner p{min-width:0;font-size:20px;line-height:1.5}
+.playing .banner button{grid-column:2;grid-row:1;font-size:20px;min-height:52px;padding:8px 12px}
+.playing .board{
+ flex:1;min-height:0;overflow:auto;overscroll-behavior:contain;scrollbar-gutter:stable;
+ grid-template-columns:repeat(var(--cols,3),minmax(0,1fr));
+ grid-template-rows:repeat(var(--rows,2),minmax(116px,1fr));gap:12px;
+ padding:4px;scroll-padding:8px;
+}
+.playing .memory-card{aspect-ratio:auto;min-height:0;height:100%;padding:8px 6px;border-radius:16px;gap:3px;overflow:hidden}
+.playing .card-art{width:auto;max-width:92%;height:clamp(50px,11dvh,125px);max-height:65%;flex-shrink:1;min-height:0}
+.playing .card-name{font-size:clamp(24px,2.7vw,34px);overflow-wrap:anywhere;line-height:1.15}
+.playing .memory-card.word .card-name{font-size:clamp(28px,3vw,40px)}
+.playing .card-back svg{width:40px;height:40px;margin-bottom:4px}
+.playing .card-back b{font-size:30px;line-height:1.25}
+.playing .card-back small{font-size:18px}
+.playing .action-row{flex:none;flex-wrap:nowrap;margin-top:12px;gap:10px}
+.playing .action-row .btn{min-width:0;min-height:60px;padding:10px 12px;font-size:22px;line-height:1.3}
+.playing .helper-text{display:none}
+.playing.large-text .banner p,.playing.large-text .progress-text{font-size:24px}
+.playing.large-text .card-name{font-size:32px}
+.playing.large-text .board{grid-template-rows:repeat(var(--rows,2),minmax(145px,1fr))}
+.playing.large-text .action-row .btn{font-size:24px}
+@media(max-width:760px){
+ .playing .top-inner{flex-direction:row;align-items:center}
+ .playing .brand{display:none}
+ .playing .tools{width:100%;flex-wrap:nowrap}
+ .playing .tools .btn{min-width:0;padding:8px 6px;font-size:18px;min-height:48px}
+ .playing #main{width:calc(100% - 16px);padding:8px 0}
+ .playing #play-screen{padding:10px}
+ .play-title{gap:10px}
+ .play-title h2{font-size:20px}
+ .playing #finish{font-size:18px;padding:8px 12px;min-height:48px}
+}
+@media(max-width:620px){
+ .playing .badge{display:none}
+ .playing .board{
+  grid-template-columns:repeat(var(--mobile-cols,2),minmax(0,1fr));
+  grid-template-rows:repeat(var(--mobile-rows,3),minmax(110px,1fr));gap:8px;
+ }
+ .playing .banner{padding:8px 10px;gap:8px;margin-bottom:8px}
+ .playing .banner p{font-size:18px}
+ .playing .banner button{font-size:18px;min-height:48px;padding:8px}
+ .playing .progress-row{margin-bottom:8px}
+ .playing .action-row{margin-top:8px;gap:8px}
+ .playing .action-row .btn{font-size:20px;min-height:58px;padding:9px 5px}
+ .playing .card-art{height:clamp(44px,9dvh,92px);max-height:63%}
+ .playing .card-name{font-size:24px}
+ .playing .memory-card.word .card-name{font-size:28px}
+ .playing .matched-mark{font-size:13px;padding:1px 6px;top:3px;right:3px}
+ .playing.large-text .board{grid-template-rows:repeat(var(--mobile-rows,3),minmax(145px,1fr))}
+ .playing.large-text .card-name{font-size:30px}
+ .playing.large-text .action-row .btn{font-size:22px}
+ .playing.large-text .tools .btn{font-size:20px}
+}
+@media(max-height:650px) and (min-width:761px){
+ .playing .top-inner{padding:6px 0}
+ .playing .tools .btn{min-height:44px;padding:6px 12px}
+ .playing .board{grid-template-rows:repeat(var(--rows,2),minmax(95px,1fr))}
+ .playing .banner{padding:6px 10px;margin-bottom:6px}
+ .playing .card-art{height:62px}
+ .playing .action-row{margin-top:6px}
+ .playing .action-row .btn{min-height:48px;padding:6px}
+}
+
 </style>
 </head>
 <body>
@@ -153,6 +247,7 @@ dialog{padding:25px 20px}
 </div>
 </header>
 <main class="shell" id="main">
+<div id="menu-screen">
 <section class="hero" aria-labelledby="page-title">
 <div><p class="kicker">천천히, 즐겁게, 함께</p><h1 id="page-title">기억꽃 <span>놀이터</span></h1><p>익숙한 그림으로 짝을 찾아보세요.<br>시간제한 없이, 내 속도로 즐기면 됩니다.</p></div>
 <div class="hero-flower" id="hero-flower" aria-hidden="true"></div>
@@ -174,24 +269,13 @@ dialog{padding:25px 20px}
 </div>
 <p class="calm-note" id="setup-note">이름을 입력하지 않아도 됩니다. 순위와 시간 경쟁은 없어요.</p>
 </section>
-<section class="activity card-panel" aria-labelledby="activity-title">
-<div class="activity-head"><h2 id="activity-title">같은 그림 찾기</h2><span class="badge" id="activity-badge">카드 6장 · 3쌍</span></div>
-<div class="progress-row"><div class="progress-track" id="progress" role="progressbar" aria-label="찾은 카드 쌍" aria-valuemin="0" aria-valuemax="3" aria-valuenow="0"><div class="progress-fill" id="progress-fill"></div></div><span class="progress-text" id="progress-text">0 / 3쌍</span></div>
-<div class="banner"><p id="status" role="status" aria-live="polite" aria-atomic="true" tabindex="-1">위의 ‘시작하기’를 눌러주세요.</p><button class="btn small" id="ready" type="button" hidden>준비됐어요</button><button class="btn small" id="turn-back" type="button" hidden>다시 뒤집기</button></div>
-<div class="board" id="board" role="group" aria-label="기억 카드"></div>
-<div class="action-row">
-<button class="btn" id="hint" type="button" disabled>그림 다시 보기</button>
-<button class="btn" id="pause" type="button" disabled>잠깐 쉬기</button>
-<button class="btn soft" id="finish" type="button" disabled>놀이 마치기</button>
-</div>
-<p class="helper-text">맞힌 카드는 그대로 남아 있어요. 도움을 받아도 괜찮습니다.</p>
-</section>
+
 <details id="settings">
 <summary>진행 속도와 기록 설정</summary>
 <div class="settings-body">
 <div><label class="field-label" for="preview">처음 그림 살펴보기</label><select id="preview"><option value="10">10초 동안 보기</option><option value="15">15초 동안 보기</option><option value="20">20초 동안 보기</option><option value="0">준비될 때까지 보기</option></select></div>
 <div><label class="field-label" for="wrong-time">다른 짝을 골랐을 때</label><select id="wrong-time"><option value="3.5">3.5초 동안 보기</option><option value="5">5초 동안 보기</option><option value="8">8초 동안 보기</option></select></div>
-<div><label class="check-line"><input id="record-enabled" type="checkbox" checked>이 기기에 활동 기록 남기기</label><p class="setting-note">이름·연락처·건강정보는 입력받지 않습니다. 진행 중에는 주제·단계·속도를 바꿀 수 없어요.</p></div>
+<div><label class="check-line"><input id="record-enabled" type="checkbox" checked>이 기기에 활동 기록 남기기</label><p class="setting-note">이름·연락처·건강정보는 입력받지 않습니다. 주제·단계·속도는 메뉴 화면에서 선택합니다.</p></div>
 <div><p class="setting-note">음성은 기기의 한국어 음성 지원에 따라 다르게 들릴 수 있습니다. 소리 없이도 모든 안내를 볼 수 있어요.</p></div>
 </div>
 </details>
@@ -201,9 +285,22 @@ dialog{padding:25px 20px}
 <p class="setting-note" id="storage-note">활동 기록은 현재 기기의 이 브라우저에만 저장됩니다.</p>
 <ul class="history-list" id="history-list"></ul>
 </details>
+</div>
+<section id="play-screen" class="activity card-panel" hidden aria-labelledby="activity-title">
+<div class="activity-head"><div class="play-title"><button class="btn small" id="finish" type="button">← 메뉴로</button><h2 id="activity-title">같은 그림 찾기</h2></div><span class="badge" id="activity-badge">카드 6장 · 3쌍</span></div>
+<div class="progress-row"><div class="progress-track" id="progress" role="progressbar" aria-label="찾은 카드 쌍" aria-valuemin="0" aria-valuemax="3" aria-valuenow="0"><div class="progress-fill" id="progress-fill"></div></div><span class="progress-text" id="progress-text">0 / 3쌍</span></div>
+<div class="banner"><p id="status" role="status" aria-live="polite" aria-atomic="true" tabindex="-1">위의 ‘시작하기’를 눌러주세요.</p><button class="btn small" id="ready" type="button" hidden>준비됐어요</button><button class="btn small" id="turn-back" type="button" hidden>다시 뒤집기</button></div>
+<div class="board" id="board" role="group" aria-label="기억 카드"></div>
+<div class="action-row">
+<button class="btn" id="hint" type="button" disabled>그림 다시 보기</button>
+<button class="btn" id="pause" type="button" disabled>잠깐 쉬기</button>
+<button class="btn soft" id="restart-play" type="button">새로 하기</button>
+</div>
+<p class="helper-text">맞힌 카드는 그대로 남아 있어요. 도움을 받아도 괜찮습니다.</p>
+</section>
 </main>
-<footer class="shell">
-<p>기억꽃 놀이터 · 1.1 수정판</p>
+<footer class="shell" id="site-footer">
+<p>기억꽃 놀이터 · 1.2 화면 분리판</p>
 <p>이 놀이는 기억·인지활동과 대화를 돕는 보조도구입니다.</p>
 <p>치매를 진단하거나 예방 효과를 판정하는 검사가 아닙니다. 불편하거나 피곤하면 쉬어가세요.</p>
 </footer>
@@ -211,7 +308,7 @@ dialog{padding:25px 20px}
 <h2 id="help-title">이렇게 즐겨보세요</h2>
 <ol class="steps"><li>‘시작하기’를 누르고 그림을 살펴봅니다.</li><li>준비되면 ‘준비됐어요’를 누릅니다.</li><li>카드를 두 장 골라 같은 그림의 짝을 찾습니다.</li></ol>
 <p>‘그림과 이름 연결하기’에서는 그림 한 장과 그 이름 한 장을 연결합니다.</p>
-<p>어려우면 ‘그림 다시 보기’, 피곤하면 ‘잠깐 쉬기’를 누르세요.</p>
+<p>어려우면 ‘그림 다시 보기’, 피곤하면 ‘잠깐 쉬기’를 누르세요. 주제나 단계를 바꾸려면 실행 화면 왼쪽 위의 ‘메뉴로’를 누릅니다.</p>
 <button class="btn primary" type="button" id="help-close">알겠어요</button>
 </dialog>
 <dialog id="pause-dialog" aria-labelledby="pause-title">
@@ -348,6 +445,7 @@ const prefs={
  large:raw.large===true,record:raw.record!==false
 };
 let records=(Array.isArray(saved.records)?saved.records:[]).filter((r)=>r&&Number.isFinite(r.ts)&&Object.hasOwn(THEMES,r.theme)&&['picture','word'].includes(r.mode)&&[3,4,6].includes(r.pairs)).slice(-100);
+let playView=false;
 let sound=false,game,roundNumber=0,lastCompletedRound=-1,currentRound=null,confirmAction=null,helpPaused=false,recordedThisRound=false;
 function persist(){try{localStorage.setItem(STORAGE_KEY,JSON.stringify({settings:prefs,records:records}));storageOK=true;}catch(e){storageOK=false;}renderStorageNote();}
 function renderStorageNote(){$('storage-note').textContent=storageOK?'활동 기록은 현재 기기의 이 브라우저에만 저장됩니다.':'이 브라우저에서는 기록 저장을 사용할 수 없습니다. 놀이는 그대로 즐길 수 있어요.';}
@@ -373,12 +471,14 @@ function render(){
  const focusId=document.activeElement&&document.activeElement.id;
  const active=game.active();
  document.body.classList.toggle('large-text',prefs.large);
+ document.body.classList.toggle('playing',playView);
+ $('menu-screen').hidden=playView;$('play-screen').hidden=!playView;$('site-footer').hidden=playView;
  $('font-toggle').setAttribute('aria-pressed',String(prefs.large));$('font-toggle').textContent=prefs.large?'글씨 기본 크기':'글씨 더 크게';
  $('theme').value=prefs.theme;$('mode').value=prefs.mode;$('preview').value=String(prefs.preview);$('wrong-time').value=String(prefs.wrong);$('record-enabled').checked=prefs.record;
  document.querySelectorAll('.level').forEach((b)=>{b.setAttribute('aria-pressed',String(+b.dataset.pairs===prefs.pairs));b.disabled=false;});
  ['theme','mode','preview','wrong-time','record-enabled'].forEach((id)=>{$(id).disabled=active;});
  $('practice').disabled=active;$('start').textContent=active?'새로 시작하기':'시작하기';
- $('setup-note').textContent=active?'단계를 바꾸면 새 카드로 시작합니다. 주제·놀이 방법은 ‘놀이 마치기’ 후 바꿀 수 있어요.':'이름을 입력하지 않아도 됩니다. 순위와 시간 경쟁은 없어요.';
+ $('setup-note').textContent=active?'주제와 단계는 ‘메뉴로’를 누른 뒤 바꿀 수 있어요.':'이름을 입력하지 않아도 됩니다. 순위와 시간 경쟁은 없어요.';
  const n=game.items.length;
  $('activity-title').textContent=(currentRound.practice?'연습 · ':'')+(currentRound.mode==='picture'?'같은 그림 찾기':'그림과 이름 연결하기');
  $('activity-badge').textContent='카드 '+n*2+'장 · '+n+'쌍';
@@ -386,8 +486,10 @@ function render(){
  $('progress-fill').style.width=(game.found/n*100)+'%';$('progress-text').textContent=game.found+' / '+n+'쌍';
  const text=statusText();if($('status').textContent!==text)$('status').textContent=text;
  $('ready').hidden=game.phase!=='preview'||game.paused;$('turn-back').hidden=game.phase!=='mismatch'||game.paused;
- $('hint').disabled=game.phase!=='play'||game.paused;$('pause').disabled=!active||game.paused;$('finish').disabled=!active||game.paused;
- $('board').style.setProperty('--cols',String(n===2?2:n===3?3:4));
+ $('hint').disabled=game.phase!=='play'||game.paused;$('pause').disabled=!active||game.paused;$('finish').disabled=game.paused;$('restart-play').disabled=game.paused;
+ const cols=n===2?2:n===3?3:4,mobileCols=n===6?3:2;
+ $('board').style.setProperty('--cols',String(cols));$('board').style.setProperty('--rows',String(Math.ceil(n*2/cols)));
+ $('board').style.setProperty('--mobile-cols',String(mobileCols));$('board').style.setProperty('--mobile-rows',String(Math.ceil(n*2/mobileCols)));
  const cards=game.deck.map((card,i)=>{
   const visible=game.visible(i);
   const b=document.createElement('button');b.type='button';b.id='card-'+i;b.dataset.index=String(i);
@@ -411,21 +513,23 @@ function render(){
  if(game.phase==='complete'&&lastCompletedRound!==roundNumber){lastCompletedRound=roundNumber;completeRound();}
 }
 function newRound(practice,startNow){
- stopSpeech();game.cancelTask();roundNumber++;recordedThisRound=false;
+ stopSpeech();game.cancelTask();roundNumber++;recordedThisRound=false;playView=!!startNow;
  currentRound={theme:prefs.theme,mode:prefs.mode,pairs:practice?2:prefs.pairs,practice:practice,preview:prefs.preview,wrong:prefs.wrong};
  const items=sample(THEMES[currentRound.theme].items,currentRound.pairs);
  game.reset(items,currentRound);
+ $('board').scrollTop=0;
+ if(typeof window.scrollTo==='function')window.scrollTo(0,0);
  if(startNow){game.begin();speak('그림을 천천히 살펴보세요. 준비되면 준비됐어요를 눌러주세요.');$('ready').focus({preventScroll:true});$('settings').open=false;}
 }
 function showDialog(id){const d=$(id);if(!d.open)d.showModal();}
 function closeDialog(id){const d=$(id);if(d.open)d.close();}
 function pauseRound(){if(game.pause()){stopSpeech();showDialog('pause-dialog');$('resume').focus();}}
 function resumeRound(){closeDialog('pause-dialog');game.resume();if(game.phase==='preview')$('ready').focus();else $('status').focus({preventScroll:true});}
-function finishRound(){closeDialog('pause-dialog');stopSpeech();newRound(false,false);$('start').focus();}
+function finishRound(){closeDialog('pause-dialog');stopSpeech();newRound(false,false);$('theme').focus({preventScroll:true});}
 function askConfirm(title,text,label,action){
  confirmAction=action;game.pause();stopSpeech();$('confirm-title').textContent=title;$('confirm-text').textContent=text;$('confirm-yes').textContent=label;$('confirm-no').textContent=game.active()?'이어서 하기':'돌아가기';showDialog('confirm-dialog');$('confirm-no').focus();
 }
-function cancelConfirm(){confirmAction=null;closeDialog('confirm-dialog');game.resume();$('start').focus({preventScroll:true});}
+function cancelConfirm(){confirmAction=null;closeDialog('confirm-dialog');game.resume();(playView?$('restart-play'):$('start')).focus({preventScroll:true});}
 function completeRound(){
  if(!currentRound.practice&&prefs.record&&!recordedThisRound){
   recordedThisRound=true;records.push({ts:Date.now(),theme:currentRound.theme,mode:currentRound.mode,pairs:currentRound.pairs,hints:game.hints});records=records.slice(-100);persist();renderHistory();
@@ -462,14 +566,16 @@ document.querySelectorAll('.level').forEach((b)=>b.addEventListener('click',()=>
   askConfirm('놀이 단계를 바꿀까요?','현재 놀이를 마치고 카드 '+nextPairs*2+'장으로 새로 시작합니다.','이 단계로 시작하기',()=>{prefs.pairs=nextPairs;persist();newRound(false,true);});
  }else{prefs.pairs=nextPairs;persist();newRound(false,false);}
 }));
-$('start').addEventListener('click',()=>{if(game.active())askConfirm('새로 시작할까요?','지금 진행하던 놀이를 마치고 새 카드를 준비합니다.','새로 시작하기',()=>newRound(false,true));else newRound(false,true);});
+function requestRestart(){if(game.active())askConfirm('새로 시작할까요?','지금 진행하던 놀이를 마치고 새 카드를 준비합니다.','새로 시작하기',()=>newRound(false,true));else newRound(false,true);}
+$('start').addEventListener('click',requestRestart);
+$('restart-play').addEventListener('click',requestRestart);
 $('practice').addEventListener('click',()=>newRound(true,true));
 $('ready').addEventListener('click',()=>{game.ready();speak(statusText());const first=$('board').querySelector('button:not(:disabled)');if(first)first.focus({preventScroll:true});});
 $('board').addEventListener('click',(e)=>{const button=e.target.closest('button[data-index]');if(!button)return;const i=+button.dataset.index;if(game.flip(i))speak(game.deck[i].item.name);});
 $('hint').addEventListener('click',()=>{if(game.hint())speak('그림을 다시 천천히 살펴보세요.');});
 $('turn-back').addEventListener('click',()=>game.hideMismatch());
 $('pause').addEventListener('click',pauseRound);
-$('finish').addEventListener('click',()=>askConfirm('오늘 놀이를 마칠까요?','여기서 마치고 놀이 선택으로 돌아갑니다.','놀이 마치기',finishRound));
+$('finish').addEventListener('click',()=>askConfirm('오늘 놀이를 마칠까요?','지금 놀이를 마치고 주제와 단계를 선택하는 화면으로 돌아갑니다.','메뉴로 돌아가기',finishRound));
 $('resume').addEventListener('click',resumeRound);
 $('pause-finish').addEventListener('click',finishRound);
 $('pause-dialog').addEventListener('cancel',(e)=>{e.preventDefault();resumeRound();});
@@ -477,8 +583,8 @@ $('confirm-yes').addEventListener('click',()=>{const action=confirmAction;confir
 $('confirm-no').addEventListener('click',cancelConfirm);
 $('confirm-dialog').addEventListener('cancel',(e)=>{e.preventDefault();cancelConfirm();});
 $('again').addEventListener('click',()=>{closeDialog('result-dialog');newRound(false,true);});
-$('result-close').addEventListener('click',()=>{closeDialog('result-dialog');newRound(false,false);$('start').focus();});
-$('result-dialog').addEventListener('cancel',(e)=>{e.preventDefault();closeDialog('result-dialog');newRound(false,false);$('start').focus();});
+$('result-close').addEventListener('click',()=>{closeDialog('result-dialog');newRound(false,false);$('theme').focus({preventScroll:true});});
+$('result-dialog').addEventListener('cancel',(e)=>{e.preventDefault();closeDialog('result-dialog');newRound(false,false);$('theme').focus({preventScroll:true});});
 $('font-toggle').addEventListener('click',()=>{prefs.large=!prefs.large;persist();render();});
 const speechAvailable='speechSynthesis' in window&&'SpeechSynthesisUtterance' in window;
 if(!speechAvailable){$('sound-toggle').disabled=true;$('sound-toggle').textContent='음성 미지원';}

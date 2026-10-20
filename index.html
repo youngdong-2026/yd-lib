@@ -1,709 +1,488 @@
 <!doctype html>
 <html lang="ko">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta name="color-scheme" content="light" />
-  <title>뒤집어라 단어카드! | 학교도서관 카드 뒤집기</title>
-  <style>
-    :root {
-      --ink:#27374b; --muted:#67778a; --paper:#fcf8f1; --navy:#345b76;
-      --teal:#357d79; --gold:#eeb65b; --border:#e5dfd6;
-      --shadow:0 14px 38px rgba(40,54,69,.11);
-    }
-    * { box-sizing:border-box; }
-    html { min-height:100%; }
-    body {
-      margin:0; color:var(--ink); background:var(--paper);
-      font-family:Pretendard,"Noto Sans KR","Malgun Gothic",system-ui,-apple-system,sans-serif;
-      min-height:100vh; overflow-x:hidden;
-    }
-    body::before { content:""; position:fixed; inset:0; pointer-events:none; opacity:.48; z-index:-1;
-      background:radial-gradient(circle at 10% 8%,#f9e9cc 0, transparent 25%),
-                 radial-gradient(circle at 97% 85%,#dcefe7 0, transparent 31%);
-    }
-    button { font:inherit; }
-    .container { width:min(100% - 32px, 820px); margin:0 auto; padding:30px 0 48px; }
-    .topline { display:flex; align-items:center; justify-content:center; gap:10px; color:#758377;
-      font-size:12px; letter-spacing:.16em; font-weight:800; margin-bottom:11px; }
-    .topline::before,.topline::after { content:""; display:block; width:36px; height:1px; background:#cbd6bf; }
-    .heading { text-align:center; }
-    .heading h1 { font-size:clamp(29px,5vw,43px); letter-spacing:-.055em; line-height:1.25; margin:0 0 10px; font-weight:900; }
-    .heading h1 em { font-style:normal; color:#387d79; }
-    .heading p { margin:0; font-size:14px; line-height:1.7; color:var(--muted); }
-    .panel { max-width:700px; margin:24px auto 0; }
-    .toolbar { display:flex; justify-content:space-between; gap:14px; align-items:stretch; margin-bottom:14px; }
-    .stats { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:9px; flex:1; }
-    .stat { border:1px solid var(--border); background:rgba(255,255,255,.84); border-radius:15px; padding:10px 15px; min-height:66px; }
-    .stat-label { font-size:12px; color:var(--muted); font-weight:700; margin-bottom:3px; }
-    .stat-value { font-size:22px; font-weight:900; font-variant-numeric:tabular-nums; letter-spacing:-.02em; }
-    .stat-value small { font-size:13px; color:var(--muted); font-weight:600; }
-    .restart { border:0; border-radius:15px; background:var(--ink); color:#fff; cursor:pointer; padding:0 18px; min-width:116px;
-      font-weight:850; box-shadow:0 6px 0 #172537; transition:transform .16s, box-shadow .16s, background .16s; }
-    .restart:hover { background:#3b566d; }
-    .restart:active { transform:translateY(4px); box-shadow:0 2px 0 #172537; }
-    .restart:focus-visible,.memory-card:focus-visible,.play-again:focus-visible { outline:3px solid var(--gold); outline-offset:3px; }
-    .board-frame { background:#fffdf9; border:1px solid #eae5dc; border-radius:24px; padding:15px; box-shadow:var(--shadow); position:relative; }
-    .board { display:grid; grid-template-columns:repeat(var(--cols,4),minmax(0,1fr)); gap:12px; }
-    .memory-card { display:block; width:100%; aspect-ratio:1.12/1; border:0; background:transparent; padding:0;
-      cursor:pointer; perspective:900px; position:relative; border-radius:15px; transition:opacity .45s ease, transform .45s ease; -webkit-tap-highlight-color:transparent; }
-    .card-inner { position:absolute; inset:0; transform-style:preserve-3d; transition:transform .46s cubic-bezier(.22,.7,.2,1); }
-    .memory-card.flipped .card-inner { transform:rotateY(180deg); }
-    .card-face { position:absolute; inset:0; width:100%; height:100%; border-radius:14px; backface-visibility:hidden; -webkit-backface-visibility:hidden;
-      display:flex; flex-direction:column; align-items:center; justify-content:center; overflow:hidden; }
-    .card-back { background:linear-gradient(152deg,#477d89 0%,#2c5e6a 100%); border:3px solid #63949b;
-      box-shadow:inset 0 0 0 3px rgba(255,255,255,.12),0 5px 0 rgba(29,70,78,.12); color:#f7efd8; }
-    .card-back::before { content:""; position:absolute; inset:9px; border:1px solid rgba(240,248,233,.33); border-radius:8px; }
-    .card-back .back-book { width:41%; max-width:63px; color:#ffe4ae; filter:drop-shadow(0 3px 2px rgba(0,0,0,.08)); }
-    .back-label { margin-top:7px; font-weight:900; font-size:clamp(8px,1.7vw,12px); letter-spacing:.04em; }
-    .card-front { transform:rotateY(180deg); background:#fffaf1; border:2px solid #e9d7b5; box-shadow:0 3px 0 rgba(101,81,54,.08); }
-    .card-front.term { background:linear-gradient(160deg,#fff9eb,#fff1d9); }
-    .card-front.image { background:#f5faf8; border-color:#cbded7; padding:6px; }
-    .front-eyebrow { font-size:clamp(9px,1.6vw,11px); font-weight:800; color:#a18b6d; margin-bottom:7px; }
-    .term-name { font-size:clamp(14px,3.6vw,28px); letter-spacing:-.04em; font-weight:900; line-height:1.2; text-align:center; word-break:keep-all; padding:0 4px; }
-    .card-front.kind-a .term-name { color:#2a6fa8; }
-    .card-front.kind-b .term-name { color:#d4561f; }
-    .card-front.kind-a .term-mark { background:#2a6fa8; }
-    .card-front.kind-b .term-mark { background:#d4561f; }
-    .term-mark { width:27px; height:4px; border-radius:4px; background:#e7c28c; margin-top:12px; }
-    .illustration { width:100%; height:100%; max-height:155px; display:block; }
-    .memory-card.matched { pointer-events:none; opacity:0; transform:scale(.69) rotate(-7deg); }
-    .memory-card.matched .card-inner { transition:none; }
-    .memory-card.matched:focus { outline:none; }
-    .progress-label { display:flex; justify-content:space-between; margin:16px 3px 8px; color:#637582; font-size:12px; font-weight:800; }
-    .progress-track { height:8px; background:#e8e8dd; border-radius:100px; overflow:hidden; }
-    .progress-fill { width:0%; height:100%; background:linear-gradient(90deg,#87c6b6,#3f8d80); border-radius:100px; transition:width .5s ease; }
-    .instructions { max-width:700px; margin:20px auto 0; padding:16px 18px; background:#eef3ed; border:1px solid #dce6dc; border-radius:15px;
-      font-size:13px; line-height:1.8; color:#4e625c; }
-    .instructions strong { color:#315d55; }
-    .instructions .dot { display:inline-flex; align-items:center; justify-content:center; color:#fff; background:#488379; width:20px; height:20px; border-radius:50%; font-size:11px; margin-right:6px; }
-    .footnote { margin-top:20px; text-align:center; font-size:12px; color:#8a9291; }
-    .overlay { position:fixed; inset:0; z-index:30; background:rgba(24,43,54,.55); display:grid; place-items:center; padding:18px;
-      opacity:0; visibility:hidden; transition:opacity .3s ease, visibility .3s; }
-    .overlay.show { opacity:1; visibility:visible; }
-    .win-card { width:min(100%,520px); max-height:92vh; overflow:auto; border-radius:25px; padding:26px 22px; text-align:center; background:#fffaf1;
-      box-shadow:0 22px 60px rgba(10,23,32,.25); transform:translateY(15px) scale(.97); transition:transform .3s ease; }
-    .overlay.show .win-card { transform:translateY(0) scale(1); }
-    .trophy { font-size:44px; margin:0 0 8px; }
-    .win-card h2 { margin:0 0 8px; font-size:27px; }
-    .win-card p { margin:0 0 14px; line-height:1.7; color:#667681; font-size:15px; }
-    .play-again { flex:1; border:0; cursor:pointer; background:#397f78; color:#fff; padding:15px; border-radius:13px; font-size:16px; font-weight:900; }
-    .play-again:hover { background:#2d6f68; }
-    .notice { position:absolute; inset:auto 10px 10px; text-align:center; pointer-events:none; font-size:13px; color:#567a71; }
-    .stat-value.low { color:#d4451f; animation:pulse .8s ease-in-out infinite; }
-    @keyframes pulse { 0%,100% { transform:scale(1); } 50% { transform:scale(1.12); } }
-    .win-card { position:relative; z-index:1; }
-    .win-close { position:absolute; top:10px; right:12px; width:40px; height:40px; border:0; border-radius:50%; background:#f0ebe1; color:#5d6a69; font-size:19px; font-weight:800; line-height:1; cursor:pointer; }
-    .win-close:hover { background:#e4dccb; }
-    .fx { position:absolute; inset:0; overflow:hidden; pointer-events:none; }
-    .fx span { position:absolute; top:-12%; animation:fxfall linear forwards; will-change:transform; }
-    @keyframes fxfall { 0% { transform:translateY(0) rotate(0deg); opacity:1; } 100% { transform:translateY(125vh) rotate(380deg); opacity:.85; } }
-    .banner { min-height:34px; display:flex; align-items:center; justify-content:center; margin:0 0 8px; border-radius:10px;
-      font-size:14px; font-weight:800; color:transparent; text-align:center; padding:0 8px; }
-    .banner.show { color:#2f6f6a; background:#e3f1ec; }
-    .banner.idle { color:#b4541f; background:#fdeedd; }
-    .btn-row { display:flex; gap:10px; margin-top:16px; flex-wrap:wrap; }
-    .btn-row .play-again { min-width:170px; font-size:15px; padding:13px 10px; }
-    .play-again.alt { background:#fff; color:#2d6f68; border:2px solid #397f78; }
-    .play-again.alt:hover { background:#eef6f3; }
-    .board-title { margin:6px 0 0; font-size:13px; font-weight:800; color:var(--muted); text-align:left; }
-    .rec-scroll { max-height:270px; overflow:auto; border:1px solid var(--border); border-radius:12px; background:#fff; margin-top:8px; }
-    .rec-scroll table.rec { margin-top:0; }
-    .rec-scroll table.rec th { position:sticky; top:0; background:#faf6ec; }
-    .free-cell { aspect-ratio:1.12/1; border:2px dashed #d9cfbb; border-radius:14px; display:flex; flex-direction:column; align-items:center; justify-content:center; color:#c9b98f; background:rgba(255,255,255,.4); }
-    .free-cell span { font-size:clamp(18px,4vw,30px); line-height:1; }
-    .free-cell small { font-size:clamp(9px,1.6vw,12px); font-weight:800; margin-top:4px; }
-    .board.dense { gap:8px; }
-    .term-name.long { font-size:clamp(12px,2.8vw,20px); }
-    .board.dense .term-name.long { font-size:clamp(10px,2vw,15px); }
-    .board.dense .term-name { font-size:clamp(11px,2.5vw,20px); }
-    .board.dense .front-eyebrow { display:none; }
-    .board.dense .term-mark { margin-top:6px; }
-    details.admin { max-width:700px; margin:20px auto 0; background:#f3ecdd; border:1px dashed #d6c9ad; border-radius:15px; padding:12px 16px; }
-    details.admin > summary, details.records > summary { cursor:pointer; font-weight:800; font-size:14px; }
-    .admin-body { margin-top:12px; }
-    .admin-row { display:flex; gap:12px; align-items:flex-end; flex-wrap:wrap; }
-    .admin-row label { display:block; font-size:12px; font-weight:700; color:var(--muted); margin-bottom:4px; }
-    .admin-row select, .admin-row input, .namebar input { padding:8px 10px; border:1px solid var(--border); border-radius:9px; font:inherit; font-size:14px; background:#fff; color:var(--ink); }
-    .btn { border:0; border-radius:10px; padding:10px 16px; font-weight:800; cursor:pointer; background:var(--teal); color:#fff; }
-    .btn:disabled { background:#b8c4c2; cursor:not-allowed; }
-    .btn.ghost { background:#fff; color:var(--ink); border:1px solid var(--border); }
-    .btn.danger { background:#fff; color:#b3401f; border:1px solid #e8c4b4; padding:6px 12px; font-size:12px; }
-    .word-edit { margin-top:16px; padding-top:14px; border-top:1px solid #d6c9ad; }
-    .word-edit label { display:block; font-size:13px; font-weight:800; color:var(--ink); margin-bottom:6px; }
-    .word-edit textarea { width:100%; padding:10px 12px; border:1px solid var(--border); border-radius:10px; font:inherit; font-size:15px; line-height:1.6; background:#fff; color:var(--ink); resize:vertical; }
-    .word-edit .admin-row { margin-top:10px; }
-    .grid-info { margin:10px 0 0; font-size:13px; color:var(--muted); }
-    .grid-info.warn { color:#b3401f; font-weight:700; }
-    .namebar { display:flex; align-items:center; gap:8px; margin-bottom:12px; font-size:13px; font-weight:800; color:var(--muted); }
-    .namebar input { flex:0 1 180px; }
-    details.records { max-width:700px; margin:20px auto 0; background:#fffdf9; border:1px solid var(--border); border-radius:15px; padding:12px 16px; }
-    .rec-head { display:flex; gap:10px; align-items:center; justify-content:space-between; flex-wrap:wrap; margin-top:12px; }
-    .rec-sel { display:flex; align-items:center; gap:6px; font-size:13px; font-weight:800; color:var(--muted); flex-wrap:wrap; }
-    .rec-head select { padding:6px 10px; border:1px solid var(--border); border-radius:9px; font:inherit; font-size:13px; background:#fff; color:var(--ink); }
-    table.rec { width:100%; border-collapse:collapse; margin-top:10px; font-size:13px; }
-    table.rec th { text-align:center; color:var(--muted); font-size:12px; padding:6px 4px; border-bottom:1px solid var(--border); }
-    table.rec td { text-align:center; padding:7px 4px; border-bottom:1px solid #f0ebe1; font-variant-numeric:tabular-nums; }
-    table.rec tr.me td { background:#fff4d9; font-weight:800; }
-    .rec-empty { text-align:center; color:#8a9291; font-size:13px; padding:16px 0 6px; }
-    .rank-line { margin:-6px 0 12px !important; font-weight:800; color:#b4741f !important; }
-    @media(max-width:600px) {
-      .container { width:min(100% - 20px,480px); padding:22px 0 30px; }
-      .heading p { font-size:12px; }
-      .panel { margin-top:20px; }
-      .toolbar { gap:7px; margin-bottom:11px; }
-      .stats { gap:6px; }
-      .stat { border-radius:10px; padding:9px 6px; min-height:60px; text-align:center; }
-      .stat-value { font-size:19px; } .stat-label { font-size:10px; }
-      .restart { min-width:82px; font-size:12px; padding:0 7px; border-radius:10px; }
-      .board-frame { border-radius:16px; padding:8px; }
-      .board { gap:6px; }
-      .card-face { border-radius:9px; }
-      .card-back { border-width:2px; }
-      .card-back::before { inset:5px; border-radius:5px; }
-      .back-label { margin-top:4px; font-size:8px; }
-      .front-eyebrow { margin-bottom:5px; }
-      .term-mark { width:19px; height:3px; margin-top:7px; }
-      .card-front.image { padding:2px; }
-      .instructions { font-size:12px; padding:12px; }
-    }
-    @media(prefers-reduced-motion:reduce) {
-      .fx { display:none; }
-      .stat-value.low { animation:none; }
-      *,*::before,*::after { animation-duration:.01ms!important; transition-duration:.01ms!important; }
-    }
-  </style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#28594a">
+<meta name="description" content="큰 그림으로 천천히 즐기는 어르신 기억·인지활동 카드 놀이. 시간제한과 순위 없이 생활 속 그림의 짝을 찾아보세요.">
+<title>기억꽃 놀이터 | 유원대학교 도서관</title>
+<style>
+:root{--green:#28594a;--green-dark:#174535;--cream:#f7f5ed;--ink:#233a32;--muted:#52665c;--line:#cbd6c8;--gold:#f3d58c;--white:#fffefa;--body:22px}
+*{box-sizing:border-box}
+body{margin:0;background:var(--cream);color:var(--ink);font-family:"Malgun Gothic","Apple SD Gothic Neo",system-ui,sans-serif;font-size:var(--body);line-height:1.65}
+body.large-text{--body:26px}
+button,input,select{font:inherit}
+button,select{min-height:60px}
+button{cursor:pointer;touch-action:manipulation}
+button:disabled{cursor:default}
+button:focus-visible,summary:focus-visible,select:focus-visible,a:focus-visible{outline:4px solid #8d4f00;outline-offset:4px}
+[hidden]{display:none!important}
+.shell{width:min(1120px,calc(100% - 48px));margin:auto}
+.top{border-bottom:1px solid var(--line);background:#fffdf7}
+.top-inner{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:18px 0}
+.brand{font-size:18px;font-weight:800;color:var(--green);letter-spacing:-.02em}
+.tools{display:flex;gap:8px;flex-wrap:wrap}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:10px;border:2px solid var(--green);border-radius:16px;padding:12px 24px;background:var(--white);color:var(--green-dark);font-weight:800;text-align:center;line-height:1.4}
+.btn:hover:not(:disabled){background:#eaf0e6}
+.btn.primary{background:var(--green);color:#fff;border-color:var(--green)}
+.btn.primary:hover:not(:disabled){background:var(--green-dark)}
+.btn.soft{border-color:var(--line);background:#fff}
+.btn.small{font-size:18px;padding:10px 16px;min-height:52px;border-radius:12px}
+.hero{display:flex;justify-content:space-between;align-items:center;gap:24px;padding:36px 0 28px}
+.kicker{margin:0 0 6px;font-size:18px;letter-spacing:.06em;color:var(--green);font-weight:800}
+h1{font-size:clamp(38px,5vw,56px);line-height:1.2;letter-spacing:-.06em;margin:0 0 14px}
+h1 span{color:var(--green)}
+.hero p:not(.kicker){margin:0;color:var(--muted)}
+.hero-flower{width:132px;flex:none}.hero-flower svg,.dialog-flower svg{display:block;width:100%;height:auto}
+.card-panel{border:1px solid var(--line);border-radius:24px;padding:26px;background:var(--white)}
+.choose-title{font-size:1.05em;margin:0 0 18px;font-weight:800}
+.setup-grid{display:grid;grid-template-columns:1fr 1fr;gap:24px}
+.field-label{display:block;font-weight:800;margin-bottom:8px}
+select{width:100%;padding:12px 44px 12px 16px;border:2px solid #859b8c;border-radius:13px;background:#fff;color:var(--ink)}
+select:disabled{color:#53665b;background:#edf0e8;border-color:#bdc9bb;opacity:1}
+fieldset{border:0;padding:0;margin:22px 0 0;min-width:0}
+legend{font-weight:800;margin-bottom:10px;padding:0}
+.levels{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.level{min-height:88px;border:2px solid var(--line);border-radius:16px;background:#fff;text-align:left;padding:13px 18px;color:var(--ink)}
+.level strong,.level span{display:block}
+.level span{font-size:.82em;color:var(--muted)}
+.level[aria-pressed=true]{border:3px solid var(--green);background:#e9f1e5;padding:12px 17px}
+.level:disabled{opacity:1;background:#f0f2ec;color:#52665c}
+.level:disabled[aria-pressed=true]{background:#e9f1e5;border-color:var(--green)}
+.start-row{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-top:24px}
+.start-row .primary{min-width:220px;font-size:1.12em}
+.calm-note{font-size:.87em;color:var(--muted);margin:16px 0 0}
+.activity{margin-top:26px}
+.activity-head{display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:16px}
+.activity-head h2{font-size:1.12em;margin:0}
+.badge{font-size:.83em;background:#e4eddf;color:var(--green-dark);padding:6px 14px;border-radius:99px;font-weight:800}
+.progress-row{display:flex;align-items:center;gap:16px;margin-bottom:18px}
+.progress-track{flex:1;height:14px;background:#e1e7dc;border-radius:99px;overflow:hidden}
+.progress-fill{height:100%;width:0;background:var(--green);border-radius:99px;transition:width .25s ease}
+.progress-text{font-weight:800;white-space:nowrap}
+.banner{background:#edf2e8;border:1px solid #cedac8;padding:16px 20px;border-radius:16px;margin-bottom:18px;min-height:78px;display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap}
+.banner p{margin:0;flex:1;min-width:180px;font-weight:700}
+.board{display:grid;grid-template-columns:repeat(var(--cols,3),minmax(0,1fr));gap:16px}
+.memory-card{position:relative;display:flex;align-items:center;justify-content:center;flex-direction:column;width:100%;min-height:184px;aspect-ratio:1.13;border:3px solid #638a73;border-radius:20px;background:var(--green);color:#fff;padding:12px;transition:background .2s ease,border-color .2s ease}
+.memory-card:hover:not(:disabled){border-color:#9b651b}
+.memory-card.open{background:#fffefa;border-color:#9bac8f;color:var(--ink)}
+.memory-card.matched{background:#edf4e7;border-color:#5e8362;color:var(--ink);opacity:1}
+.card-back{display:flex;align-items:center;justify-content:center;flex-direction:column}
+.card-back svg{width:56px;height:56px;margin-bottom:9px}
+.card-back b{font-size:clamp(24px,3vw,34px)}
+.card-back small{font-size:18px;opacity:.95}
+.card-art{display:block;width:min(85%,160px);height:auto;max-height:145px}
+.card-name{font-size:clamp(27px,3.5vw,38px);line-height:1.25;font-weight:900;word-break:keep-all;text-align:center}
+.memory-card.word .card-name{font-size:clamp(32px,4vw,46px)}
+.matched-mark{position:absolute;top:7px;right:8px;font-size:16px;font-weight:800;border-radius:99px;background:var(--green);color:#fff;padding:2px 10px}
+.action-row{display:flex;gap:12px;flex-wrap:wrap;margin-top:22px}
+.action-row .btn{flex:1;min-width:160px}
+.helper-text{color:var(--muted);font-size:.86em;margin:15px 0 0}
+details{margin-top:22px;border:1px solid var(--line);border-radius:18px;background:var(--white);padding:18px 22px}
+summary{cursor:pointer;font-weight:800;min-height:44px}
+.settings-body{padding-top:18px;display:grid;grid-template-columns:1fr 1fr;gap:20px}
+.setting-note{font-size:.83em;color:var(--muted);margin:10px 0 0}
+.check-line{display:flex;align-items:center;gap:12px;margin:8px 0}
+input[type=checkbox]{width:28px;height:28px;flex:none;accent-color:var(--green)}
+.history-top{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-top:14px}
+.history-list{padding:0;margin:16px 0 0;list-style:none}
+.history-list li{border-top:1px solid var(--line);padding:12px 0;font-size:.86em}
+.history-list strong{display:block}
+.empty{font-size:.9em;color:var(--muted);margin:16px 0 4px}
+footer{padding:28px 0 36px;font-size:17px;color:var(--muted)}
+footer p{margin:6px 0}
+dialog{border:0;border-radius:24px;background:var(--white);color:var(--ink);width:min(620px,calc(100% - 28px));max-height:90dvh;overflow-y:auto;padding:32px;box-shadow:0 20px 70px #14261c40}
+dialog::backdrop{background:#182d25c9}
+dialog h2{font-size:clamp(28px,4vw,36px);margin:0 0 14px;line-height:1.35}
+dialog p{margin:12px 0}
+dialog .btn{width:100%;margin-top:12px}
+.dialog-flower{width:90px;height:90px;display:block;margin:0 auto 18px}
+.result{text-align:center}
+.story{background:#edf2e8;text-align:left;padding:18px;border-radius:16px;margin:22px 0}
+.story h3{font-size:1em;margin:0 0 8px}
+.story small{font-size:.82em;color:var(--muted)}
+.steps{padding-left:1.4em}
+.steps li{padding:6px 0}
+.large-text .btn.small{font-size:22px}
+.large-text .brand,.large-text .kicker{font-size:22px}
+.large-text footer{font-size:21px}
+.large-text .card-name{font-size:clamp(32px,4vw,44px)}
+@media(max-width:760px){
+.shell{width:calc(100% - 28px)}
+.top-inner{align-items:flex-start;flex-direction:column}
+.tools{width:100%}.tools .btn{flex:1}
+.hero{padding:25px 0 22px;gap:10px}.hero-flower{width:80px}
+.setup-grid{grid-template-columns:1fr;gap:18px}
+.card-panel{padding:18px}
+.levels{gap:8px}
+.level{padding:12px 9px;text-align:center}
+.level[aria-pressed=true]{padding:11px 8px}
+.level strong{font-size:19px}.level span{font-size:18px}
+.start-row .btn{width:100%}
+.settings-body{grid-template-columns:1fr}
+.banner{padding:14px}
+}
+@media(max-width:620px){
+.board{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.memory-card{min-height:166px;border-radius:16px;padding:11px 5px;aspect-ratio:1/1.12}
+.card-art{width:90%;max-height:120px}
+.card-name{font-size:28px}
+.card-back small{font-size:17px}
+.progress-row{gap:10px}.progress-text{font-size:20px}
+.action-row .btn{min-width:130px;padding:13px 10px}
+.hero-flower{width:62px}
+dialog{padding:25px 20px}
+.matched-mark{font-size:14px;top:5px;right:5px;padding:2px 7px}
+.large-text .levels{grid-template-columns:1fr}
+.large-text .level strong{font-size:25px}
+.large-text .level span{font-size:22px}
+}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{transition:none!important;animation:none!important;scroll-behavior:auto!important}}
+</style>
 </head>
 <body>
-  <main class="container">
-    <header class="heading">
-      <h1>뒤집어라 <em>단어카드</em>!</h1>
-      <p>카드를 두 장씩 뒤집어, 같은 글자의 짝꿍을 찾아보세요. (글자 색은 서로 달라요!)</p>
-    </header>
+<header class="top">
+<div class="shell top-inner">
+<div class="brand">유원대학교 도서관 · 어르신 인지활동</div>
+<div class="tools">
+<button class="btn small" id="font-toggle" type="button" aria-pressed="false">글씨 더 크게</button>
+<button class="btn small" id="sound-toggle" type="button" aria-pressed="false">소리 켜기</button>
+<button class="btn small" id="help-open" type="button">놀이 방법</button>
+</div>
+</div>
+</header>
+<main class="shell" id="main">
+<section class="hero" aria-labelledby="page-title">
+<div><p class="kicker">천천히, 즐겁게, 함께</p><h1 id="page-title">기억꽃 <span>놀이터</span></h1><p>익숙한 그림으로 짝을 찾아보세요.<br>시간제한 없이, 내 속도로 즐기면 됩니다.</p></div>
+<div class="hero-flower" id="hero-flower" aria-hidden="true"></div>
+</section>
+<section class="card-panel" aria-label="놀이 선택" id="setup">
+<h2 class="choose-title">오늘은 어떤 그림으로 놀아볼까요?</h2>
+<div class="setup-grid">
+<div><label class="field-label" for="theme">그림 주제</label><select id="theme"><option value="fruit">영동의 과일</option><option value="home">우리 집 생활용품</option><option value="nature">꽃과 자연</option></select></div>
+<div><label class="field-label" for="mode">놀이 방법</label><select id="mode"><option value="picture">같은 그림 찾기</option><option value="word">그림과 이름 연결하기</option></select></div>
+</div>
+<fieldset><legend>편한 단계를 골라주세요</legend><div class="levels">
+<button class="level" type="button" data-pairs="3" aria-pressed="true"><strong>천천히 즐기기</strong><span>카드 6장 · 3쌍</span></button>
+<button class="level" type="button" data-pairs="4" aria-pressed="false"><strong>익숙하게 즐기기</strong><span>카드 8장 · 4쌍</span></button>
+<button class="level" type="button" data-pairs="6" aria-pressed="false"><strong>조금 더 도전하기</strong><span>카드 12장 · 6쌍</span></button>
+</div></fieldset>
+<div class="start-row">
+<button class="btn primary" type="button" id="start">시작하기</button>
+<button class="btn" type="button" id="practice">먼저 연습하기 · 2쌍</button>
+</div>
+<p class="calm-note" id="setup-note">이름을 입력하지 않아도 됩니다. 순위와 시간 경쟁은 없어요.</p>
+</section>
+<section class="activity card-panel" aria-labelledby="activity-title">
+<div class="activity-head"><h2 id="activity-title">같은 그림 찾기</h2><span class="badge" id="activity-badge">카드 6장 · 3쌍</span></div>
+<div class="progress-row"><div class="progress-track" id="progress" role="progressbar" aria-label="찾은 카드 쌍" aria-valuemin="0" aria-valuemax="3" aria-valuenow="0"><div class="progress-fill" id="progress-fill"></div></div><span class="progress-text" id="progress-text">0 / 3쌍</span></div>
+<div class="banner"><p id="status" role="status" aria-live="polite" aria-atomic="true" tabindex="-1">위의 ‘시작하기’를 눌러주세요.</p><button class="btn small" id="ready" type="button" hidden>준비됐어요</button><button class="btn small" id="turn-back" type="button" hidden>다시 뒤집기</button></div>
+<div class="board" id="board" role="group" aria-label="기억 카드"></div>
+<div class="action-row">
+<button class="btn" id="hint" type="button" disabled>그림 다시 보기</button>
+<button class="btn" id="pause" type="button" disabled>잠깐 쉬기</button>
+<button class="btn soft" id="finish" type="button" disabled>놀이 마치기</button>
+</div>
+<p class="helper-text">맞힌 카드는 그대로 남아 있어요. 도움을 받아도 괜찮습니다.</p>
+</section>
+<details id="settings">
+<summary>진행 속도와 기록 설정</summary>
+<div class="settings-body">
+<div><label class="field-label" for="preview">처음 그림 살펴보기</label><select id="preview"><option value="10">10초 동안 보기</option><option value="15">15초 동안 보기</option><option value="20">20초 동안 보기</option><option value="0">준비될 때까지 보기</option></select></div>
+<div><label class="field-label" for="wrong-time">다른 짝을 골랐을 때</label><select id="wrong-time"><option value="3.5">3.5초 동안 보기</option><option value="5">5초 동안 보기</option><option value="8">8초 동안 보기</option></select></div>
+<div><label class="check-line"><input id="record-enabled" type="checkbox" checked>이 기기에 활동 기록 남기기</label><p class="setting-note">이름·연락처·건강정보는 입력받지 않습니다. 진행 중에는 주제·단계·속도를 바꿀 수 없어요.</p></div>
+<div><p class="setting-note">음성은 기기의 한국어 음성 지원에 따라 다르게 들릴 수 있습니다. 소리 없이도 모든 안내를 볼 수 있어요.</p></div>
+</div>
+</details>
+<details id="history">
+<summary>나의 활동 기록</summary>
+<div class="history-top"><span id="history-count" tabindex="-1">완료한 놀이 0회</span><button class="btn small soft" id="clear-history" type="button">기록 지우기</button></div>
+<p class="setting-note" id="storage-note">활동 기록은 현재 기기의 이 브라우저에만 저장됩니다.</p>
+<ul class="history-list" id="history-list"></ul>
+</details>
+</main>
+<footer class="shell">
+<p>이 놀이는 기억·인지활동과 대화를 돕는 보조도구입니다.</p>
+<p>치매를 진단하거나 예방 효과를 판정하는 검사가 아닙니다. 불편하거나 피곤하면 쉬어가세요.</p>
+</footer>
+<dialog id="help-dialog" aria-labelledby="help-title">
+<h2 id="help-title">이렇게 즐겨보세요</h2>
+<ol class="steps"><li>‘시작하기’를 누르고 그림을 살펴봅니다.</li><li>준비되면 ‘준비됐어요’를 누릅니다.</li><li>카드를 두 장 골라 같은 그림의 짝을 찾습니다.</li></ol>
+<p>‘그림과 이름 연결하기’에서는 그림 한 장과 그 이름 한 장을 연결합니다.</p>
+<p>어려우면 ‘그림 다시 보기’, 피곤하면 ‘잠깐 쉬기’를 누르세요.</p>
+<button class="btn primary" type="button" id="help-close">알겠어요</button>
+</dialog>
+<dialog id="pause-dialog" aria-labelledby="pause-title">
+<h2 id="pause-title">잠시 쉬어가세요</h2><p>서두르지 않아도 괜찮습니다.<br>준비되시면 이어서 즐겨주세요.</p>
+<button class="btn primary" type="button" id="resume">이어서 하기</button>
+<button class="btn" type="button" id="pause-finish">오늘은 여기까지</button>
+</dialog>
+<dialog id="confirm-dialog" aria-labelledby="confirm-title">
+<h2 id="confirm-title">새로 시작할까요?</h2><p id="confirm-text"></p>
+<button class="btn primary" type="button" id="confirm-yes">새로 시작하기</button>
+<button class="btn" type="button" id="confirm-no">이어서 하기</button>
+</dialog>
+<dialog id="result-dialog" class="result" aria-labelledby="result-title">
+<div id="result-flower" class="dialog-flower" aria-hidden="true"></div>
+<h2 id="result-title">오늘의 기억꽃이 피었어요</h2><p id="result-description"></p>
+<div class="story"><h3>잠깐, 이야기 나눠볼까요?</h3><p id="story-question"></p><small>대답은 자유롭게, 원하지 않으면 건너뛰셔도 됩니다.</small></div>
+<button class="btn primary" type="button" id="again">한 번 더 즐기기</button>
+<button class="btn" type="button" id="result-close">놀이 선택으로</button>
+</dialog>
+<script>
+'use strict';
+// 모든 그림은 이 파일에 포함된 벡터 삽화입니다. 외부 이미지·서버가 필요하지 않습니다.
+const ICONS = {
+grape:'<path d="M80 36Q73 15 97 11M83 28Q102 9 126 21Q106 43 83 28" fill="#6b955a"/><g fill="#7955a2"><circle cx="61" cy="47" r="15"/><circle cx="87" cy="47" r="15"/><circle cx="109" cy="58" r="15"/><circle cx="49" cy="70" r="15"/><circle cx="75" cy="70" r="15"/><circle cx="99" cy="83" r="15"/><circle cx="61" cy="94" r="15"/><circle cx="81" cy="108" r="14"/></g>',
+persimmon:'<path d="M80 42C45 20 21 55 38 89C53 119 104 120 121 88C137 54 111 25 80 42Z" fill="#ec8d39"/><path d="M79 44L55 30L73 28L80 15L88 29L110 30L91 43L82 55Z" fill="#639451"/><path d="M51 58Q42 70 48 82" fill="none" stroke="#ffdba3" stroke-width="7"/>',
+apple:'<path d="M80 42C52 22 25 43 31 76C37 115 64 120 80 109C101 123 127 104 131 72C135 44 109 25 80 42Z" fill="#cf5b4d"/><path d="M80 42Q78 18 91 13" fill="none"/><path d="M88 28Q104 9 121 20Q109 37 88 28" fill="#6c995b"/><path d="M49 55Q39 64 44 80" fill="none" stroke="#f8d5b7" stroke-width="7"/>',
+peach:'<path d="M81 42C46 15 13 59 36 91C61 129 91 128 122 94C151 62 118 24 81 42Z" fill="#eea28c"/><path d="M82 43Q65 76 82 113" fill="none" stroke="#ca726b"/><path d="M81 39Q92 9 119 18Q109 42 81 39" fill="#76a15d"/>',
+pear:'<path d="M68 31Q49 41 54 62C30 78 31 116 78 119C124 121 135 90 108 63Q112 37 94 30Z" fill="#d8b75d"/><path d="M80 32Q77 17 88 10" fill="none"/><path d="M85 22Q109 12 115 29Q98 37 85 22" fill="#72985d"/><path d="M57 89L58 89M76 96L77 96M95 86L96 86M85 109L86 109" stroke="#9a7537" stroke-width="4"/>',
+plum:'<path d="M80 45C45 25 22 57 34 86C45 114 78 124 105 110C139 92 139 55 111 42C99 36 88 40 80 45Z" fill="#8d4b70"/><path d="M80 44Q75 20 88 12" fill="none"/><path d="M84 27Q110 8 123 26Q106 43 84 27" fill="#6a9558"/><path d="M52 56Q41 63 45 78" fill="none" stroke="#dba6be" stroke-width="7"/>',
+cup:'<path d="M110 45H120C145 45 145 84 119 85H108" fill="none" stroke="#547b8c" stroke-width="9"/><path d="M35 36H111V86Q110 108 74 108Q36 108 35 86Z" fill="#8fb8c5"/><ellipse cx="73" cy="36" rx="38" ry="9" fill="#eaf2ed"/><path d="M27 117H122" stroke="#a0aaa0" stroke-width="5"/><path d="M62 20Q55 11 63 4M85 20Q77 11 85 4" fill="none" stroke="#9caaa1"/>',
+clock:'<circle cx="80" cy="69" r="49" fill="#e1b879"/><circle cx="80" cy="69" r="39" fill="#fffbea"/><path d="M80 39V43M80 95V99M50 69H54M106 69H110" fill="none"/><path d="M80 46V69L100 80" fill="none" stroke-width="5"/><circle cx="80" cy="69" r="4" fill="#355d4d"/>',
+umbrella:'<path d="M25 65Q29 18 80 18Q132 18 136 65Q121 55 108 65Q93 55 80 65Q66 55 52 65Q39 55 25 65Z" fill="#d9ab62"/><path d="M80 18Q57 39 52 65M80 18Q102 36 108 65M80 15V105Q80 126 99 115" fill="none"/><path d="M22 90L17 100M132 90L127 100" stroke="#7aabb5" stroke-width="5"/>',
+glasses:'<path d="M30 65L40 38H50M130 65L120 38H110" fill="none" stroke-width="6"/><rect x="21" y="62" width="49" height="36" rx="14" fill="#d7e7de" stroke-width="5"/><rect x="90" y="62" width="49" height="36" rx="14" fill="#d7e7de" stroke-width="5"/><path d="M70 72Q80 64 90 72" fill="none" stroke-width="5"/>',
+towel:'<path d="M39 22H109Q122 22 122 36V115H39Z" fill="#d0b8c9"/><path d="M39 22Q25 22 25 37H109Q109 22 122 24" fill="#eee2eb"/><path d="M49 90H113M49 99H113" stroke="#9b7590" stroke-width="5"/><path d="M39 115V123M52 115V123M65 115V123M78 115V123M91 115V123M104 115V123M117 115V123" stroke="#9b7590"/>',
+shoes:'<path d="M33 42L62 48L77 71L121 80Q137 84 135 103H25Q22 84 28 68Z" fill="#bc8264"/><path d="M25 103H135V113H24Z" fill="#eee3cd"/><path d="M65 64L79 60M72 73L88 69M79 82L96 78" stroke="#fff1d7" stroke-width="5"/>',
+flower:'<path d="M80 81V122M79 107Q51 87 43 101Q53 118 79 113M81 98Q110 79 118 94Q106 109 81 106" fill="#7fa060"/><g fill="#db9398"><ellipse cx="80" cy="30" rx="17" ry="24"/><ellipse cx="52" cy="51" rx="24" ry="17"/><ellipse cx="61" cy="80" rx="18" ry="23" transform="rotate(35 61 80)"/><ellipse cx="100" cy="80" rx="18" ry="23" transform="rotate(-35 100 80)"/><ellipse cx="108" cy="51" rx="24" ry="17"/></g><circle cx="80" cy="57" r="17" fill="#f1cf76"/>',
+butterfly:'<path d="M78 61Q24 0 20 51Q17 74 57 79Q18 89 42 116Q60 132 79 83" fill="#e4b65f"/><path d="M82 61Q136 0 140 51Q143 74 103 79Q142 89 118 116Q100 132 81 83" fill="#d78d77"/><path d="M80 55V102M77 55Q62 36 63 29M83 55Q98 36 97 29" fill="none" stroke-width="5"/>',
+leaf:'<path d="M35 105Q14 31 126 20Q136 108 35 105Z" fill="#8fa766"/><path d="M28 119L109 37M56 87L53 57M71 72L98 74M88 55L86 36" fill="none" stroke-width="4"/>',
+sunflower:'<path d="M80 85V125M80 110Q52 86 45 105Q58 122 80 116M81 104Q107 82 119 99Q108 117 81 112" fill="#779257"/><g fill="#e9bc4d"><ellipse cx="80" cy="30" rx="12" ry="24"/><ellipse cx="80" cy="90" rx="12" ry="24"/><ellipse cx="49" cy="60" rx="24" ry="12"/><ellipse cx="111" cy="60" rx="24" ry="12"/><ellipse cx="58" cy="39" rx="12" ry="23" transform="rotate(-45 58 39)"/><ellipse cx="103" cy="81" rx="12" ry="23" transform="rotate(-45 103 81)"/><ellipse cx="103" cy="39" rx="12" ry="23" transform="rotate(45 103 39)"/><ellipse cx="58" cy="81" rx="12" ry="23" transform="rotate(45 58 81)"/></g><circle cx="80" cy="60" r="23" fill="#906649"/>',
+bird:'<path d="M43 73L23 52L25 88L46 92" fill="#91b2ba"/><path d="M43 73Q52 40 89 53Q88 28 110 30Q130 33 124 64Q134 99 99 112Q61 127 43 95Z" fill="#8eb5a2"/><path d="M121 48L143 58L123 65" fill="#e7b369"/><circle cx="112" cy="43" r="3" fill="#233d31" stroke="none"/><path d="M64 77Q94 59 102 83Q87 107 64 77" fill="#b8d0b6"/><path d="M79 114V126M99 114V126" fill="none"/>',
+pine:'<path d="M72 91H89V126H72Z" fill="#a47a53"/><path d="M80 9L42 54H57L29 85H48L20 110H140L112 85H131L103 54H118Z" fill="#769874"/><path d="M80 29V106" stroke="#4c7457" stroke-width="3"/>'
+};
+const THEMES = {
+fruit:{name:'영동의 과일',items:[
+{id:'grape',name:'포도',question:'포도를 드실 때 어떤 방법으로 즐겨 드시나요?'},
+{id:'persimmon',name:'감',question:'생감과 곶감 중 어떤 것을 더 좋아하시나요?'},
+{id:'apple',name:'사과',question:'사과로 만든 음식 중 좋아하시는 것이 있나요?'},
+{id:'peach',name:'복숭아',question:'여름에 즐겨 드시는 과일은 무엇인가요?'},
+{id:'pear',name:'배',question:'가족이나 이웃과 과일을 나눠 드신 이야기가 있나요?'},
+{id:'plum',name:'자두',question:'좋아하시는 새콤한 음식이 있나요?'}]},
+home:{name:'우리 집 생활용품',items:[
+{id:'cup',name:'컵',question:'차나 음료를 드시며 누구와 이야기 나누고 싶으신가요?'},
+{id:'clock',name:'시계',question:'하루 중 가장 좋아하시는 시간은 언제인가요?'},
+{id:'umbrella',name:'우산',question:'비 오는 날에는 무엇을 하며 보내고 싶으신가요?'},
+{id:'glasses',name:'안경',question:'편하게 쉬면서 보고 싶은 책이나 방송이 있나요?'},
+{id:'towel',name:'수건',question:'외출 후 집에 돌아오시면 무엇부터 하시나요?'},
+{id:'shoes',name:'신발',question:'편한 신발을 신고 산책하고 싶은 곳은 어디인가요?'}]},
+nature:{name:'꽃과 자연',items:[
+{id:'flower',name:'꽃',question:'가장 좋아하시는 꽃은 무엇인가요?'},
+{id:'butterfly',name:'나비',question:'봄날에 가보고 싶은 곳이 있나요?'},
+{id:'leaf',name:'나뭇잎',question:'가장 좋아하시는 계절은 언제인가요?'},
+{id:'sunflower',name:'해바라기',question:'누군가와 함께 꽃을 보러 가고 싶으신가요?'},
+{id:'bird',name:'새',question:'집 주변에서 자주 보거나 소리를 듣는 새가 있나요?'},
+{id:'pine',name:'나무',question:'나무가 많은 곳에서 산책하신 이야기가 있나요?'}]}
+};
+const FLOWER = '<svg viewBox="0 0 160 132" fill="none" stroke="#355540" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+ICONS.flower+'</svg>';
+function art(item){return '<svg class="card-art" viewBox="0 0 160 132" fill="none" stroke="#355540" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+ICONS[item.id]+'</svg>';}
+const BACK = '<svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M32 43V59M32 52Q16 41 13 49Q19 58 32 55"/><path d="M32 17C19 0 6 17 17 28C1 39 21 52 32 37C43 52 63 39 47 28C58 17 45 0 32 17Z"/><circle cx="32" cy="28" r="8"/></svg>';
 
-    <details class="admin">
-      <summary>⚙️ 설정 (가로·세로 칸 수 조정)</summary>
-      <div class="admin-body">
-        <div class="admin-row">
-          <div><label for="set-cols">가로 (열)</label><select id="set-cols"></select></div>
-          <div><label for="set-rows">세로 (행)</label><select id="set-rows"></select></div>
-          <button class="btn" id="apply-grid" type="button">저장하고 새 게임</button>
-        </div>
-        <p class="grid-info" id="grid-info"></p>
-        <div class="admin-row" style="margin-top:14px;">
-          <div><label for="set-preview">정답 미리보기 시간 (초 · 0이면 보여주지 않음)</label><input id="set-preview" type="number" min="0" max="10" step="0.5" style="width:120px;"></div>
-          <button class="btn" id="save-preview" type="button">저장하고 새 게임</button>
-        </div>
-        <div class="admin-row" style="margin-top:14px;">
-          <div><label for="set-limit">제한 시간 (초 · 0이면 제한 없음)</label><input id="set-limit" type="number" min="0" max="600" step="5" style="width:120px;"></div>
-          <button class="btn" id="save-limit" type="button">저장하고 새 게임</button>
-        </div>
-        <p class="grid-info" id="limit-info"></p>
-        <div class="word-edit">
-          <label for="word-text">📝 짝 맞추기 단어 (한 줄에 한 단어 · 최대 18개)</label>
-          <textarea id="word-text" rows="9" spellcheck="false"></textarea>
-          <p class="grid-info" id="word-info"></p>
-          <div class="admin-row">
-            <button class="btn" id="save-words" type="button">저장하고 새 게임</button>
-            <button class="btn ghost" id="reset-words" type="button">기본 단어로 되돌리기</button>
-          </div>
-        </div>
-      </div>
-    </details>
-
-    <section class="panel" aria-label="카드 뒤집기 게임">
-      <div class="namebar"><label for="player-name">🙋 이름</label><input id="player-name" type="text" maxlength="10" placeholder="이름을 쓰고 Enter 또는 새 게임" autocomplete="off"></div>
-      <div class="toolbar">
-        <div class="stats" aria-live="off">
-          <div class="stat"><div class="stat-label" id="time-label">⏱ 시간</div><div class="stat-value" id="time">00:00</div></div>
-          <div class="stat"><div class="stat-label">↻ 시도 횟수</div><div class="stat-value" id="attempts">0 <small>회</small></div></div>
-          <div class="stat"><div class="stat-label">✓ 찾은 짝</div><div class="stat-value" id="matches">0 <small>/ 8</small></div></div>
-        </div>
-        <button class="restart" id="restart" type="button">↻ 새 게임</button>
-      </div>
-      <div class="board-frame">
-        <div class="banner" id="banner" aria-live="polite"></div>
-        <div class="board" id="board" role="group" aria-label="4행 4열, 16장의 카드"></div>
-      </div>
-      <div class="progress-label"><span>찾은 짝꿍</span><span id="progress-text">0 / 8</span></div>
-      <div class="progress-track" role="progressbar" aria-label="카드 짝 맞히기 진행률" aria-valuemin="0" aria-valuemax="8" aria-valuenow="0" id="progress-track"><div class="progress-fill" id="progress-fill"></div></div>
-    </section>
-
-    <details class="records" id="records-box" open>
-      <summary>🏆 기록 (적게 시도할수록, 빠를수록 높은 순위)</summary>
-      <div class="rec-head">
-        <div class="rec-sel"><span>가로</span><select id="rec-cols" aria-label="가로 칸 수"></select><span>× 세로</span><select id="rec-rows" aria-label="세로 칸 수"></select><span>순위 보기</span></div>
-        <button class="btn danger" id="rec-clear" type="button">기록 모두 지우기</button>
-      </div>
-      <div id="rec-body"></div>
-    </details>
-
-  </main>
-
-  <div class="overlay" id="win-overlay" role="dialog" aria-modal="true" aria-labelledby="win-heading" aria-hidden="true">
-    <div class="fx" id="fx" aria-hidden="true"></div>
-    <div class="win-card">
-      <button class="win-close" id="win-close" type="button" aria-label="결과 창 닫기" title="닫기">✕</button>
-      <div class="trophy" id="win-trophy" aria-hidden="true">🏆</div>
-      <h2 id="win-heading">완성!</h2>
-      <p id="win-description">모두 찾았어요!</p>
-      <p class="rank-line" id="rank-line"></p>
-      <div class="board-title" id="win-board-title"></div>
-      <div id="win-board"></div>
-      <div class="btn-row">
-        <button class="play-again" id="play-again" type="button">같은 이름으로 다시</button>
-        <button class="play-again alt" id="next-player" type="button">다음 친구 (이름 바꾸기)</button>
-      </div>
-    </div>
-  </div>
-
-  <script>
-    'use strict';
-    // 글자만 쓰는 짝 맞추기: 같은 용어 두 장(글자 색만 다름)이 한 쌍입니다.
-    const DEFAULT_WORDS = ['대출','반납','서가','책수레','반납함','연체','대출증','청구기호','새로 들어온 책','잡지','정숙','검색','사서선생님','독서','열람','바코드','책갈피','도서관'];
-    const WORDS_KEY = 'libmatch_words', MAX_WORDS = 18, MAX_LEN = 12;
-    let pool = DEFAULT_WORDS.slice();   // 선생님이 바꿀 수 있는 단어 목록 (최대 18개)
-    let words = pool.slice(0, 8);
-    let totalPairs = 8;
-    const SETTINGS_KEY = 'libmatch_settings', RECORDS_KEY = 'libmatch_records', NAME_KEY = 'libmatch_name';
-    let cfg = { cols: 4, rows: 4 };
-    const board = document.getElementById('board');
-    const timeDisplay = document.getElementById('time');
-    const attemptsDisplay = document.getElementById('attempts');
-    const matchesDisplay = document.getElementById('matches');
-    const progressText = document.getElementById('progress-text');
-    const progressTrack = document.getElementById('progress-track');
-    const progressFill = document.getElementById('progress-fill');
-    const overlay = document.getElementById('win-overlay');
-    const winDescription = document.getElementById('win-description');
-    const restart = document.getElementById('restart');
-    const playAgain = document.getElementById('play-again');
-    const rankLine = document.getElementById('rank-line');
-    const winTrophy = document.getElementById('win-trophy');
-    const timeLabel = document.getElementById('time-label');
-    const fx = document.getElementById('fx');
-    const banner = document.getElementById('banner');
-    const winHeading = document.getElementById('win-heading');
-    const winBoard = document.getElementById('win-board');
-    const winBoardTitle = document.getElementById('win-board-title');
-    const nextPlayer = document.getElementById('next-player');
-    const PREVIEW_KEY = 'libmatch_preview', LIMIT_KEY = 'libmatch_limit';
-    let limitSec = 0;          // 제한 시간(초). 0이면 제한 없음
-    let finished = false;
-    let previewSec = 2.5;      // 새 게임 시작 때 정답을 보여주는 시간(초) - 설정에서 변경
-    let currentPlayer = '';
-    const setCols = document.getElementById('set-cols');
-    const setRows = document.getElementById('set-rows');
-    const applyGrid = document.getElementById('apply-grid');
-    const gridInfo = document.getElementById('grid-info');
-    const nameInput = document.getElementById('player-name');
-    const recCols = document.getElementById('rec-cols');
-    const recRows = document.getElementById('rec-rows');
-    let recView = null;   // 순위 보기에서 선택한 {cols, rows}
-    const recBody = document.getElementById('rec-body');
-    const wordText = document.getElementById('word-text');
-    const wordInfo = document.getElementById('word-info');
-    const saveWordsBtn = document.getElementById('save-words');
-
-    let revealed = [], locked = false, attempts = 0, matches = 0;
-    let elapsed = 0, startedAt = null, clock = null, pending = null;
-
-    const backIcon = `<svg class="back-book" viewBox="0 0 72 62" aria-hidden="true"><path d="M36 17Q21 6 7 11v36q17-3 29 7 12-10 29-7V11Q51 6 36 17Z" fill="none" stroke="currentColor" stroke-width="4" stroke-linejoin="round"/><path d="M36 17v37 M14 20q9-1 15 3 M43 23q7-4 15-3 M14 30q9-1 15 3 M43 33q7-4 15-3" stroke="currentColor" stroke-width="3" fill="none" stroke-linecap="round"/></svg>`;
-
-    function shuffle(cards) {
-      for (let i = cards.length - 1; i > 0; --i) {
-        const j = Math.floor(Math.random() * (i+1));
-        [cards[i],cards[j]] = [cards[j],cards[i]];
-      }
-      return cards;
-    }
-    function fmt(sec) { return `${String(Math.floor(sec/60)).padStart(2,'0')}:${String(sec%60).padStart(2,'0')}`; }
-    function renderTime() {
-      const remain = Math.max(0, limitSec - elapsed);
-      timeLabel.textContent = limitSec > 0 ? '⏱ 남은 시간' : '⏱ 시간';
-      timeDisplay.textContent = fmt(limitSec > 0 ? remain : elapsed);
-      timeDisplay.classList.toggle('low', limitSec > 0 && startedAt !== null && !finished && remain <= 10);
-    }
-    function updateElapsed() { elapsed = Math.floor((Date.now()-startedAt)/1000); renderTime(); }
-    function tick() { updateElapsed(); if (limitSec > 0 && elapsed >= limitSec && !finished) timeUp(); }
-    function startClock() {
-      if (startedAt !== null) return;
-      startedAt = Date.now();
-      clock = window.setInterval(tick, 250);
-    }
-    function stopClock() {
-      if (clock !== null) { clearInterval(clock); clock = null; }
-      if (startedAt !== null) updateElapsed();
-    }
-    function updateStats() {
-      attemptsDisplay.innerHTML = `${attempts} <small>회</small>`;
-      matchesDisplay.innerHTML = `${matches} <small>/ ${totalPairs}</small>`;
-      progressText.textContent = `${matches} / ${totalPairs}`;
-      progressFill.style.width = `${matches / totalPairs * 100}%`;
-      progressTrack.setAttribute('aria-valuenow', String(matches));
-    }
-    function cardHTML(data) {
-      const front = `<span class="card-face card-front term kind-${data.kind}"><span class="term-name${data.id.length >= 5 ? ' long' : ''}">${data.id}</span><span class="term-mark"></span></span>`;
-      return `<span class="card-inner"><span class="card-face card-back">${backIcon}<span class="back-label">LIBRARY</span></span>${front}</span>`;
-    }
-    function reveal(card) {
-      card.classList.add('flipped');
-      card.setAttribute('aria-label', `${card.dataset.id} 카드`);
-      card.setAttribute('aria-pressed','true');
-    }
-    function hide(card) {
-      card.classList.remove('flipped');
-      card.setAttribute('aria-label','뒤집히지 않은 카드');
-      card.setAttribute('aria-pressed','false');
-    }
-    function onFlip(event) {
-      const card = event.currentTarget;
-      if (locked || card.classList.contains('flipped') || card.classList.contains('matched')) return;
-      startClock(); reveal(card); revealed.push(card);
-      if (revealed.length !== 2) return;
-
-      locked = true; attempts++;
-      updateStats();
-      const [first, second] = revealed;
-      const good = first.dataset.id === second.dataset.id && first.dataset.kind !== second.dataset.kind;
-      if (good) {
-        pending = window.setTimeout(() => {
-          first.classList.add('matched'); second.classList.add('matched');
-          first.disabled = true; second.disabled = true;
-          first.setAttribute('aria-label', '짝을 찾은 빈 칸');
-          second.setAttribute('aria-label', '짝을 찾은 빈 칸');
-          matches++; updateStats(); revealed = [];
-          if (matches === words.length) {
-            finished = true; stopClock(); timeDisplay.classList.remove('low');
-            pending = window.setTimeout(() => {
-              winTrophy.textContent = '🏆';
-              winDescription.textContent = `${currentPlayer ? currentPlayer + '님, ' : ''}${totalPairs}쌍을 모두 찾았어요! ${attempts}번 시도 · ${fmt(elapsed)} 걸렸습니다.` + (limitSec > 0 ? ` (제한 시간 ${fmtKo(limitSec)} 안에 성공!)` : '');
-              const rank = addRecord();
-              winHeading.textContent = '성공!';
-              rankLine.textContent = rank === 1 ? '🎉 신기록! 이 판 1위예요!' : `이 판 ${rank}위에 올랐어요!`;
-              winBoardTitle.textContent = `가로 ${cfg.cols} × 세로 ${cfg.rows} 순위 (지금까지의 모든 기록)`;
-              winBoard.replaceChildren(buildTable(loadRecords(), cfg.cols, cfg.rows));
-              overlay.classList.add('show'); overlay.setAttribute('aria-hidden','false');
-              celebrate(true);
-              playAgain.focus();
-              const me = winBoard.querySelector('tr.me'); if (me && me.scrollIntoView) me.scrollIntoView({ block: 'nearest' });
-            }, 530);
-          } else { locked = false; pending = null; }
-        }, 540);
-      } else {
-        pending = window.setTimeout(() => {
-          hide(first); hide(second);
-          revealed = []; locked = false; pending = null;
-        }, 1050);
-      }
-    }
-    function fmtKo(sec) { const m = Math.floor(sec / 60), r = sec % 60; return m && r ? `${m}분 ${r}초` : m ? `${m}분` : `${r}초`; }
-    function celebrate(win) {
-      fx.replaceChildren();
-      const set = win ? ['🎉','🎊','🎆','✨','🥳','⭐','🎈'] : ['😭','😢','💧','😭'];
-      for (let i = 0; i < (win ? 44 : 26); i++) {
-        const sp = document.createElement('span');
-        sp.textContent = set[Math.floor(Math.random() * set.length)];
-        sp.style.left = (Math.random() * 96) + '%';
-        sp.style.fontSize = (18 + Math.random() * 20) + 'px';
-        sp.style.animationDuration = (win ? 2.2 + Math.random() * 2.6 : 3.5 + Math.random() * 3) + 's';
-        sp.style.animationDelay = (Math.random() * (win ? 1.2 : 2)) + 's';
-        fx.appendChild(sp);
-      }
-    }
-    function timeUp() {
-      if (finished) return;
-      finished = true; locked = true;
-      if (clock !== null) { clearInterval(clock); clock = null; }
-      if (pending !== null) { clearTimeout(pending); pending = null; }
-      elapsed = limitSec; renderTime(); timeDisplay.classList.remove('low');
-      board.querySelectorAll('.memory-card:not(.matched)').forEach(reveal);   // 못 찾은 카드의 정답을 보여줘요
-      winTrophy.textContent = '😭';
-      winHeading.textContent = '시간 초과';
-      winDescription.textContent = `${currentPlayer ? currentPlayer + '님, ' : ''}아쉬워요! ${matches}쌍을 찾았어요. 다음에 다시 도전해요!`;
-      rankLine.textContent = '';
-      lastTs = 0;
-      winBoardTitle.textContent = `가로 ${cfg.cols} × 세로 ${cfg.rows} 순위 (지금까지의 모든 기록)`;
-      winBoard.replaceChildren(buildTable(loadRecords(), cfg.cols, cfg.rows));
-      overlay.classList.add('show'); overlay.setAttribute('aria-hidden','false');
-      celebrate(false);
-      playAgain.focus();
-    }
-    let bannerTimer = null;
-    function showBanner(text, idle) { if (bannerTimer) { clearTimeout(bannerTimer); bannerTimer = null; } banner.textContent = text; banner.classList.toggle('show', !!text && !idle); banner.classList.toggle('idle', !!text && !!idle); }
-    function newGame(opts = {}) {
-      if (pending !== null) { clearTimeout(pending); pending = null; }
-      if (clock !== null) { clearInterval(clock); clock = null; }
-      totalPairs = Math.floor(cfg.cols * cfg.rows / 2);
-      words = shuffle(pool.slice()).slice(0, totalPairs);
-      board.style.setProperty('--cols', cfg.cols);
-      board.classList.toggle('dense', cfg.cols >= 5);
-      board.setAttribute('aria-label', `${cfg.rows}행 ${cfg.cols}열, ${cfg.rows * cfg.cols}장의 카드`);
-      progressTrack.setAttribute('aria-valuemax', String(totalPairs));
-      currentPlayer = nameInput.value.trim();
-      revealed = []; locked = true; attempts = 0; matches = 0; finished = false; fx.replaceChildren(); rankLine.textContent = '';
-      elapsed = 0; startedAt = null; renderTime(); updateStats(); renderRecords();
-      overlay.classList.remove('show'); overlay.setAttribute('aria-hidden','true');
-      const cards = shuffle(words.flatMap(id => [{id,kind:'a'},{id,kind:'b'}]));
-      // 카드 수가 홀수(3×3, 5×5 등)이면 가운데 한 칸은 '빈 칸'으로 둡니다.
-      if ((cfg.cols * cfg.rows) % 2 === 1) cards.splice(Math.floor(cards.length / 2), 0, { free: true });
-      board.replaceChildren();
-      cards.forEach((data, index) => {
-        if (data.free) {
-          const free = document.createElement('div');
-          free.className = 'free-cell'; free.setAttribute('aria-label', '빈 칸 (짝이 없는 칸)');
-          free.innerHTML = '<span>★</span><small>빈 칸</small>';
-          board.appendChild(free); return;
-        }
-        const card = document.createElement('button');
-        card.type = 'button'; card.className = 'memory-card';
-        card.dataset.id = data.id; card.dataset.kind = data.kind;
-        card.setAttribute('aria-label','뒤집히지 않은 카드');
-        card.setAttribute('aria-pressed','false');
-        card.title = `${index+1}번 카드 뒤집기`;
-        card.innerHTML = cardHTML(data);
-        card.addEventListener('click', onFlip);
-        board.appendChild(card);
-      });
-      const all = [...board.querySelectorAll('.memory-card')];
-      if (opts.idle) { showBanner('이름을 입력하고 "새 게임"을 눌러 시작하세요!', true); return; }
-      // 시작 전에 정답(모든 카드)을 잠깐 보여준 뒤 다시 뒤집습니다.
-      if (previewSec <= 0) { showBanner(''); locked = false; if (limitSec > 0) startClock(); return; }
-      showBanner('정답을 잘 보세요! 곧 카드가 뒤집어져요');
-      pending = window.setTimeout(() => {
-        all.forEach(reveal);
-        pending = window.setTimeout(() => {
-          all.forEach(hide);
-          showBanner(`시작! ${limitSec > 0 ? '제한 시간 ' + fmtKo(limitSec) + ' · ' : ''}같은 단어를 찾아보세요`);
-          locked = false; pending = null;
-          if (limitSec > 0) startClock();       // 제한 시간이 있으면 정답을 보여준 직후부터 시간이 흘러요
-          bannerTimer = window.setTimeout(() => showBanner(''), 1800);
-        }, previewSec * 1000);
-      }, 100);
-    }
-    restart.addEventListener('click', () => newGame());
-    playAgain.addEventListener('click', () => { newGame(); restart.focus(); });
-    nextPlayer.addEventListener('click', () => {
-      nameInput.value = ''; try { localStorage.setItem(NAME_KEY, ''); } catch (e) {}
-      newGame({ idle: true }); nameInput.focus();
-    });
-    function closeResult() {
-      overlay.classList.remove('show'); overlay.setAttribute('aria-hidden','true');
-      fx.replaceChildren();
-      showBanner('"새 게임"을 눌러 다시 시작하세요!', true);
-      restart.focus();
-    }
-    document.getElementById('win-close').addEventListener('click', closeResult);
-    document.addEventListener('keydown', e => {
-      if (e.key === 'Escape' && overlay.classList.contains('show')) closeResult();
-    });
-
-    // ---------- 설정 창 닫기 ----------
-    const adminBox = document.querySelector('details.admin');
-    function closeSettings() {
-      adminBox.open = false;                       // 저장하면 설정 창을 자동으로 접어서 게임 화면이 바로 보이게 합니다.
-      try { window.scrollTo({ top: 0, behavior: 'smooth' }); } catch (e) {}
-    }
-
-    // ---------- 설정 (가로·세로) ----------
-    function validGrid(c, r) {
-      return Number.isInteger(c) && Number.isInteger(r) && c >= 2 && c <= 6 && r >= 2 && r <= 6
-        && Math.floor((c * r) / 2) <= pool.length;
-    }
-    function fillSelect(sel, value) {
-      for (let n = 2; n <= 6; n++) { const o = document.createElement('option'); o.value = n; o.textContent = `${n}칸`; sel.appendChild(o); }
-      sel.value = String(value);
-    }
-    function checkGridUI() {
-      const c = +setCols.value, r = +setRows.value, cards = c * r;
-      gridInfo.classList.remove('warn');
-      if (Math.floor(cards / 2) > pool.length) {
-        gridInfo.textContent = `단어가 ${pool.length}개라 최대 ${pool.length * 2 + 1}칸까지 가능해요. 단어를 더 넣거나 칸 수를 줄여 주세요.`;
-        gridInfo.classList.add('warn'); applyGrid.disabled = true;
-      } else if (cards % 2 === 1) {
-        gridInfo.textContent = `카드 ${cards - 1}장 · ${(cards - 1) / 2}쌍 + 가운데 빈 칸 1개 (가로 ${c} × 세로 ${r})`;
-        applyGrid.disabled = false;
-      } else {
-        gridInfo.textContent = `카드 ${cards}장 · ${cards / 2}쌍 (가로 ${c} × 세로 ${r})`;
-        applyGrid.disabled = false;
-      }
-    }
-    function loadSettings() {
-      try {
-        const s = JSON.parse(localStorage.getItem(SETTINGS_KEY) || 'null');
-        if (s && validGrid(s.cols, s.rows)) cfg = { cols: s.cols, rows: s.rows };
-      } catch (e) {}
-      if (!validGrid(cfg.cols, cfg.rows)) cfg = { cols: 2, rows: 2 };
-      fillSelect(setCols, cfg.cols); fillSelect(setRows, cfg.rows); checkGridUI();
-    }
-    setCols.addEventListener('change', checkGridUI);
-    setRows.addEventListener('change', checkGridUI);
-    applyGrid.addEventListener('click', () => {
-      const c = +setCols.value, r = +setRows.value;
-      if (!validGrid(c, r)) return;
-      cfg = { cols: c, rows: r }; checkWords();
-      recView = { cols: c, rows: r };
-      try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(cfg)); } catch (e) {}
-      newGame();
-      const old = applyGrid.textContent; applyGrid.textContent = '적용됨 ✓';
-      setTimeout(() => applyGrid.textContent = old, 1200);
-      closeSettings();
-    });
-
-    // ---------- 미리보기 시간 ----------
-    const setPreview = document.getElementById('set-preview');
-    const clampPreview = v => { v = parseFloat(v); if (!isFinite(v)) return 2.5; return Math.min(10, Math.max(0, Math.round(v * 10) / 10)); };
-    function loadPreview() {
-      try { const v = localStorage.getItem(PREVIEW_KEY); if (v !== null) previewSec = clampPreview(v); } catch (e) {}
-      setPreview.value = previewSec;
-    }
-    document.getElementById('save-preview').addEventListener('click', () => {
-      previewSec = clampPreview(setPreview.value); setPreview.value = previewSec;
-      try { localStorage.setItem(PREVIEW_KEY, String(previewSec)); } catch (e) {}
-      const b = document.getElementById('save-preview'); const old = b.textContent; b.textContent = '저장됨 ✓';
-      setTimeout(() => b.textContent = old, 1200);
-      newGame();
-      closeSettings();
-    });
-
-    // ---------- 제한 시간 ----------
-    const setLimit = document.getElementById('set-limit');
-    const limitInfo = document.getElementById('limit-info');
-    const clampLimit = v => { v = parseInt(v, 10); if (!isFinite(v)) return 0; return Math.min(600, Math.max(0, v)); };
-    function updateLimitInfo() {
-      const v = clampLimit(setLimit.value);
-      limitInfo.textContent = v > 0 ? `제한 시간 ${fmtKo(v)} — 시간 안에 다 못 찾으면 "시간 초과"` : '제한 시간 없음 (걸린 시간만 기록해요)';
-    }
-    function loadLimit() {
-      try { const v = localStorage.getItem(LIMIT_KEY); if (v !== null) limitSec = clampLimit(v); } catch (e) {}
-      setLimit.value = limitSec; updateLimitInfo();
-    }
-    setLimit.addEventListener('input', updateLimitInfo);
-    document.getElementById('save-limit').addEventListener('click', () => {
-      limitSec = clampLimit(setLimit.value); setLimit.value = limitSec; updateLimitInfo();
-      try { localStorage.setItem(LIMIT_KEY, String(limitSec)); } catch (e) {}
-      newGame();
-      closeSettings();
-    });
-
-    // ---------- 단어 목록 편집 ----------
-    function parseWords(text) {
-      const seen = new Set(), list = []; let dup = 0;
-      text.split(/\r?\n/).map(t => t.replace(/\s+/g, ' ').trim()).filter(Boolean).forEach(w => {
-        if (seen.has(w)) { dup++; return; }
-        seen.add(w); list.push(w);
-      });
-      return { list, dup };
-    }
-    function checkWords() {
-      const { list, dup } = parseWords(wordText.value);
-      const need = Math.floor(cfg.cols * cfg.rows / 2);
-      let msg = `현재 ${list.length}개` + (dup ? ` (같은 단어 ${dup}개는 한 번만 셉니다)` : '');
-      let ok = true;
-      if (list.length > MAX_WORDS) { msg += ` · 최대 ${MAX_WORDS}개까지 넣을 수 있어요.`; ok = false; }
-      else if (list.some(w => w.length > MAX_LEN)) { msg += ` · 한 단어는 ${MAX_LEN}글자 이내로 써 주세요.`; ok = false; }
-      else if (list.length < need) { msg += ` · 지금 판 크기(${cfg.cols}×${cfg.rows})에는 단어가 ${need}개 이상 필요해요.`; ok = false; }
-      wordInfo.textContent = msg; wordInfo.classList.toggle('warn', !ok); saveWordsBtn.disabled = !ok;
-      return { ok, list };
-    }
-    function loadWords() {
-      try {
-        const w = JSON.parse(localStorage.getItem(WORDS_KEY) || 'null');
-        if (Array.isArray(w) && w.length >= 2 && w.length <= MAX_WORDS && w.every(x => typeof x === 'string' && x.trim() && x.length <= MAX_LEN)) pool = w.slice();
-      } catch (e) {}
-      wordText.value = pool.join('\n');
-    }
-    function saveWords() {
-      const { ok, list } = checkWords();
-      if (!ok) return;
-      pool = list;
-      try { localStorage.setItem(WORDS_KEY, JSON.stringify(pool)); } catch (e) {}
-      wordText.value = pool.join('\n'); checkGridUI(); checkWords(); newGame();
-      const old = saveWordsBtn.textContent; saveWordsBtn.textContent = '저장됨 ✓';
-      setTimeout(() => saveWordsBtn.textContent = old, 1200);
-      closeSettings();
-    }
-    wordText.addEventListener('input', checkWords);
-    saveWordsBtn.addEventListener('click', saveWords);
-    document.getElementById('reset-words').addEventListener('click', () => { wordText.value = DEFAULT_WORDS.join('\n'); saveWords(); });
-
-    // ---------- 기록 ----------
-    function loadRecords() { try { return JSON.parse(localStorage.getItem(RECORDS_KEY) || '[]'); } catch (e) { return []; } }
-    function saveRecords(list) { try { localStorage.setItem(RECORDS_KEY, JSON.stringify(list.slice(-300))); } catch (e) {} }
-    const byRank = (a, b) => a.attempts - b.attempts || a.time - b.time || a.ts - b.ts;
-    let lastTs = 0;
-    // 예전에 저장된 기록(가로·세로 정보 없음)은 카드 장수가 같은 판에서 함께 보여 줍니다.
-    const sameGrid = (r, c, rw) => r.cols ? (r.cols === c && r.rows === rw) : (r.cards === Math.floor(c * rw / 2) * 2);
-    function addRecord() {
-      const rec = { name: (currentPlayer || '이름 없음'), cols: cfg.cols, rows: cfg.rows, cards: totalPairs * 2,
-                    attempts, time: elapsed, ts: Date.now() };
-      const list = loadRecords(); list.push(rec); saveRecords(list);
-      recView = { cols: cfg.cols, rows: cfg.rows }; lastTs = rec.ts;
-      renderRecords();
-      const ranked = list.filter(r => sameGrid(r, cfg.cols, cfg.rows)).sort(byRank);
-      return ranked.findIndex(r => r.ts === rec.ts) + 1;
-    }
-    function renderRecords() {
-      if (!recCols.options.length) {
-        [recCols, recRows].forEach(sel => { for (let n = 2; n <= 6; n++) { const o = document.createElement('option'); o.value = n; o.textContent = `${n}칸`; sel.appendChild(o); } });
-      }
-      const v = recView || { cols: cfg.cols, rows: cfg.rows };
-      recCols.value = String(v.cols); recRows.value = String(v.rows);
-      drawTable(loadRecords());
-    }
-    function buildTable(list, c, rw) {
-      const ranked = list.filter(r => sameGrid(r, c, rw)).sort(byRank);
-      if (!ranked.length) {
-        const d = document.createElement('div'); d.className = 'rec-empty'; d.textContent = '아직 기록이 없어요. 첫 번째 주인공이 되어 보세요!';
-        return d;
-      }
-      const wrap = document.createElement('div'); wrap.className = 'rec-scroll';
-      const t = document.createElement('table'); t.className = 'rec';
-      t.innerHTML = '<thead><tr><th>순위</th><th>이름</th><th>시도</th><th>시간</th><th>날짜</th></tr></thead>';
-      const tb = document.createElement('tbody');
-      ranked.forEach((r, i) => {
-        const tr = document.createElement('tr');
-        if (r.ts === lastTs) tr.className = 'me';
-        const d = new Date(r.ts);
-        [i + 1 + (i === 0 ? ' 🥇' : i === 1 ? ' 🥈' : i === 2 ? ' 🥉' : ''), r.name, `${r.attempts}회`, fmt(r.time), `${d.getMonth() + 1}/${d.getDate()}`]
-          .forEach(v => { const td = document.createElement('td'); td.textContent = v; tr.appendChild(td); });
-        tb.appendChild(tr);
-      });
-      t.appendChild(tb); wrap.appendChild(t); return wrap;
-    }
-    function drawTable(list) { recBody.replaceChildren(buildTable(list, +recCols.value, +recRows.value)); }
-    [recCols, recRows].forEach(sel => sel.addEventListener('change', () => { recView = { cols: +recCols.value, rows: +recRows.value }; drawTable(loadRecords()); }));
-    // 브라우저 기본 확인창(confirm)은 막히는 환경이 있어서, 화면 안에서 두 번 눌러 확인합니다.
-    const recClear = document.getElementById('rec-clear');
-    let clearTimer = null;
-    function disarmClear(label) {
-      if (clearTimer) { clearTimeout(clearTimer); clearTimer = null; }
-      recClear.textContent = label || '기록 모두 지우기';
-      recClear.style.background = ''; recClear.style.color = '';
-    }
-    recClear.addEventListener('click', () => {
-      if (!clearTimer) {
-        recClear.textContent = '정말 지울까요? 한 번 더 누르세요';
-        recClear.style.background = '#b3401f'; recClear.style.color = '#fff';
-        clearTimer = setTimeout(() => disarmClear(), 4000);
-        return;
-      }
-      disarmClear('지웠어요 ✓');
-      try { localStorage.removeItem(RECORDS_KEY); localStorage.setItem(RECORDS_KEY, '[]'); } catch (e) {}
-      lastTs = 0; recView = null;
-      renderRecords();
-      setTimeout(() => { if (!clearTimer) recClear.textContent = '기록 모두 지우기'; }, 1500);
-    });
-    try { nameInput.value = localStorage.getItem(NAME_KEY) || ''; } catch (e) {}
-    nameInput.addEventListener('input', () => { try { localStorage.setItem(NAME_KEY, nameInput.value); } catch (e) {} });
-
-    nameInput.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); newGame(); nameInput.blur(); } });
-    loadPreview();
-    loadLimit();
-    loadWords();
-    loadSettings();
-    checkWords();
-    newGame({ idle: true });
-  </script>
+// 순수 게임 상태: 화면·저장소·음성 기능과 분리하여 동작을 검사할 수 있습니다.
+class MemoryGame {
+ constructor(notify,clock){this.notify=notify||function(){};this.clock=clock||{now:Date.now,set:setTimeout,clear:clearTimeout};this.epoch=0;this.task=null;this.phase='idle';this.paused=false;this.deck=[];this.selected=[];this.found=0;this.hints=0;this.moves=0;}
+ cancelTask(){if(this.task){this.clock.clear(this.task.id);this.task=null;}}
+ reset(items,options){
+  this.cancelTask();this.epoch++;this.options=Object.assign({},options);this.items=items.slice();this.deck=[];
+  items.forEach((item)=>{this.deck.push({item:item,kind:'picture',matched:false});this.deck.push({item:item,kind:options.mode==='word'?'word':'picture',matched:false});});
+  for(let i=this.deck.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));const tmp=this.deck[i];this.deck[i]=this.deck[j];this.deck[j]=tmp;}
+  this.selected=[];this.found=0;this.hints=0;this.moves=0;this.paused=false;this.phase='idle';this.notify();
+ }
+ schedule(kind,ms){
+  this.cancelTask();const epoch=this.epoch;const task={kind:kind,remaining:ms,due:this.clock.now()+ms,id:null};this.task=task;
+  task.id=this.clock.set(()=>{if(epoch!==this.epoch||this.task!==task||this.paused)return;this.task=null;this.transition(kind);},ms);
+ }
+ begin(){if(this.phase!=='idle')return;this.phase='preview';if(this.options.preview>0)this.schedule('preview',this.options.preview*1000);this.notify();}
+ ready(){if(this.phase!=='preview'||this.paused)return;this.cancelTask();this.phase='play';this.notify();}
+ transition(kind){
+  if(kind==='preview'){this.phase='play';}
+  if(kind==='mismatch'){this.selected=[];this.phase='play';}
+  if(kind==='hint'){this.phase='play';}
+  if(kind==='match'){
+   this.selected.forEach((i)=>{this.deck[i].matched=true;});this.selected=[];this.found++;
+   this.phase=this.found===this.items.length?'complete':'play';
+  }
+  this.notify();
+ }
+ flip(index){
+  if(this.paused||this.phase!=='play'||!Number.isInteger(index)||!this.deck[index]||this.deck[index].matched||this.selected.includes(index))return false;
+  this.selected.push(index);
+  if(this.selected.length===2){
+   this.moves++;const a=this.deck[this.selected[0]],b=this.deck[this.selected[1]];
+   if(a.item.id===b.item.id){this.phase='matching';this.schedule('match',650);}
+   else{this.phase='mismatch';this.schedule('mismatch',this.options.wrong*1000);}
+  }
+  this.notify();return true;
+ }
+ hideMismatch(){if(this.phase!=='mismatch'||this.paused)return;this.cancelTask();this.selected=[];this.phase='play';this.notify();}
+ hint(){if(this.phase!=='play'||this.paused)return false;this.hints++;this.phase='hint';this.schedule('hint',5000);this.notify();return true;}
+ pause(){
+  if(this.paused||['idle','complete'].includes(this.phase))return false;
+  if(this.task){this.clock.clear(this.task.id);this.task.remaining=Math.max(0,this.task.due-this.clock.now());}
+  this.paused=true;this.notify();return true;
+ }
+ resume(){
+  if(!this.paused)return;this.paused=false;
+  if(this.task){const kind=this.task.kind,remaining=this.task.remaining;this.task=null;this.schedule(kind,remaining);}
+  this.notify();
+ }
+ visible(index){return this.deck[index].matched||['preview','hint'].includes(this.phase)||this.selected.includes(index);}
+ active(){return !['idle','complete'].includes(this.phase);}
+}
+const $=(id)=>document.getElementById(id);
+const STORAGE_KEY='u1_memory_garden_v1';
+let storageOK=true;
+function readSaved(){try{const value=JSON.parse(localStorage.getItem(STORAGE_KEY)||'null');return value&&typeof value==='object'?value:{};}catch(e){storageOK=false;return {};}}
+const saved=readSaved();
+const defaults={theme:'fruit',mode:'picture',pairs:3,preview:10,wrong:3.5,large:false,record:true};
+const raw=saved.settings&&typeof saved.settings==='object'?saved.settings:{};
+const prefs={
+ theme:Object.hasOwn(THEMES,raw.theme)?raw.theme:defaults.theme,
+ mode:['picture','word'].includes(raw.mode)?raw.mode:defaults.mode,
+ pairs:[3,4,6].includes(raw.pairs)?raw.pairs:defaults.pairs,
+ preview:[0,10,15,20].includes(raw.preview)?raw.preview:defaults.preview,
+ wrong:[3.5,5,8].includes(raw.wrong)?raw.wrong:defaults.wrong,
+ large:raw.large===true,record:raw.record!==false
+};
+let records=(Array.isArray(saved.records)?saved.records:[]).filter((r)=>r&&Number.isFinite(r.ts)&&Object.hasOwn(THEMES,r.theme)&&['picture','word'].includes(r.mode)&&[3,4,6].includes(r.pairs)).slice(-100);
+let sound=false,game,roundNumber=0,lastCompletedRound=-1,currentRound=null,confirmAction=null,helpPaused=false,recordedThisRound=false;
+function persist(){try{localStorage.setItem(STORAGE_KEY,JSON.stringify({settings:prefs,records:records}));storageOK=true;}catch(e){storageOK=false;}renderStorageNote();}
+function renderStorageNote(){$('storage-note').textContent=storageOK?'활동 기록은 현재 기기의 이 브라우저에만 저장됩니다.':'이 브라우저에서는 기록 저장을 사용할 수 없습니다. 놀이는 그대로 즐길 수 있어요.';}
+function speak(text){
+ if(!sound||!('speechSynthesis' in window)||!('SpeechSynthesisUtterance' in window))return;
+ try{window.speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(text);u.lang='ko-KR';u.rate=.85;const voice=window.speechSynthesis.getVoices().find((v)=>v.lang.toLowerCase().startsWith('ko'));if(voice)u.voice=voice;window.speechSynthesis.speak(u);}catch(e){}
+}
+function stopSpeech(){try{if('speechSynthesis' in window)window.speechSynthesis.cancel();}catch(e){}}
+function sample(list,count){const all=list.slice();for(let i=all.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));const t=all[i];all[i]=all[j];all[j]=t;}return all.slice(0,count);}
+function statusText(){
+ if(game.paused)return '잠시 쉬는 중입니다.';
+ if(game.phase==='idle')return '위의 ‘시작하기’를 눌러주세요.';
+ if(game.phase==='preview')return '그림을 천천히 살펴보세요. 준비되면 눌러주세요.';
+ if(game.phase==='hint')return '그림을 다시 살펴보세요. 잠시 뒤에 카드가 뒤집힙니다.';
+ if(game.phase==='mismatch')return '서로 다른 짝이에요. 천천히 다시 찾아보세요.';
+ if(game.phase==='matching')return '짝을 찾으셨어요!';
+ if(game.phase==='complete')return '모든 짝을 찾으셨어요. 함께해 주셔서 고맙습니다.';
+ if(game.selected.length)return currentRound.mode==='word'?'그림에 맞는 이름, 또는 이름에 맞는 그림을 골라주세요.':'같은 그림이 있는 카드 한 장을 더 골라주세요.';
+ return currentRound.mode==='word'?'그림 한 장과 그 이름 한 장을 골라주세요.':'카드 두 장을 골라 같은 그림의 짝을 찾아보세요.';
+}
+function render(){
+ if(!game)return;
+ const focusId=document.activeElement&&document.activeElement.id;
+ const active=game.active();
+ document.body.classList.toggle('large-text',prefs.large);
+ $('font-toggle').setAttribute('aria-pressed',String(prefs.large));$('font-toggle').textContent=prefs.large?'글씨 기본 크기':'글씨 더 크게';
+ $('theme').value=prefs.theme;$('mode').value=prefs.mode;$('preview').value=String(prefs.preview);$('wrong-time').value=String(prefs.wrong);$('record-enabled').checked=prefs.record;
+ document.querySelectorAll('.level').forEach((b)=>{b.setAttribute('aria-pressed',String(+b.dataset.pairs===prefs.pairs));b.disabled=active;});
+ ['theme','mode','preview','wrong-time','record-enabled'].forEach((id)=>{$(id).disabled=active;});
+ $('practice').disabled=active;$('start').textContent=active?'새로 시작하기':'시작하기';
+ $('setup-note').textContent=active?'주제나 단계를 바꾸려면 ‘놀이 마치기’를 눌러주세요.':'이름을 입력하지 않아도 됩니다. 순위와 시간 경쟁은 없어요.';
+ const n=game.items.length;
+ $('activity-title').textContent=(currentRound.practice?'연습 · ':'')+(currentRound.mode==='picture'?'같은 그림 찾기':'그림과 이름 연결하기');
+ $('activity-badge').textContent='카드 '+n*2+'장 · '+n+'쌍';
+ $('progress').setAttribute('aria-valuemax',String(n));$('progress').setAttribute('aria-valuenow',String(game.found));
+ $('progress-fill').style.width=(game.found/n*100)+'%';$('progress-text').textContent=game.found+' / '+n+'쌍';
+ const text=statusText();if($('status').textContent!==text)$('status').textContent=text;
+ $('ready').hidden=game.phase!=='preview'||game.paused;$('turn-back').hidden=game.phase!=='mismatch'||game.paused;
+ $('hint').disabled=game.phase!=='play'||game.paused;$('pause').disabled=!active||game.paused;$('finish').disabled=!active||game.paused;
+ $('board').style.setProperty('--cols',String(n===2?2:n===3?3:4));
+ const cards=game.deck.map((card,i)=>{
+  const visible=game.visible(i);
+  const b=document.createElement('button');b.type='button';b.id='card-'+i;b.dataset.index=String(i);
+  b.className='memory-card'+(visible?' open':'')+(card.matched?' matched':'')+(card.kind==='word'?' word':'');
+  b.disabled=game.phase!=='play'||game.paused||card.matched||game.selected.includes(i);
+  b.setAttribute('aria-pressed',String(visible));
+  b.setAttribute('aria-label',card.matched?card.item.name+', 짝 찾음':visible?card.item.name+(card.kind==='word'?' 이름 카드':' 그림 카드'):(i+1)+'번 카드, 뒤집기');
+  if(!visible){b.innerHTML='<span class="card-back" aria-hidden="true">'+BACK+'<b>'+(i+1)+'</b><small>눌러보세요</small></span>';}
+  else{
+   b.innerHTML=(card.kind==='picture'?art(card.item):'')+(currentRound.mode==='picture'||card.kind==='word'?'<span class="card-name" aria-hidden="true">'+card.item.name+'</span>':'')+(card.matched?'<span class="matched-mark" aria-hidden="true">✓ 찾았어요</span>':'');
+  }
+  return b;
+ });
+ $('board').replaceChildren(...cards);
+ if(focusId&&focusId.startsWith('card-')){
+  const target=$(focusId);
+  if(target&&!target.disabled)target.focus({preventScroll:true});
+  else if(game.phase==='play'){const next=$('board').querySelector('button:not(:disabled)');if(next)next.focus({preventScroll:true});}
+  else if(['matching','mismatch','complete'].includes(game.phase))$('status').focus({preventScroll:true});
+ }
+ if(game.phase==='complete'&&lastCompletedRound!==roundNumber){lastCompletedRound=roundNumber;completeRound();}
+}
+function newRound(practice,startNow){
+ stopSpeech();game.cancelTask();roundNumber++;recordedThisRound=false;
+ currentRound={theme:prefs.theme,mode:prefs.mode,pairs:practice?2:prefs.pairs,practice:practice,preview:prefs.preview,wrong:prefs.wrong};
+ const items=sample(THEMES[currentRound.theme].items,currentRound.pairs);
+ game.reset(items,currentRound);
+ if(startNow){game.begin();speak('그림을 천천히 살펴보세요. 준비되면 준비됐어요를 눌러주세요.');$('ready').focus({preventScroll:true});$('settings').open=false;}
+}
+function showDialog(id){const d=$(id);if(!d.open)d.showModal();}
+function closeDialog(id){const d=$(id);if(d.open)d.close();}
+function pauseRound(){if(game.pause()){stopSpeech();showDialog('pause-dialog');$('resume').focus();}}
+function resumeRound(){closeDialog('pause-dialog');game.resume();if(game.phase==='preview')$('ready').focus();else $('status').focus({preventScroll:true});}
+function finishRound(){closeDialog('pause-dialog');stopSpeech();newRound(false,false);$('start').focus();}
+function askConfirm(title,text,label,action){
+ confirmAction=action;game.pause();stopSpeech();$('confirm-title').textContent=title;$('confirm-text').textContent=text;$('confirm-yes').textContent=label;$('confirm-no').textContent=game.active()?'이어서 하기':'돌아가기';showDialog('confirm-dialog');$('confirm-no').focus();
+}
+function cancelConfirm(){confirmAction=null;closeDialog('confirm-dialog');game.resume();$('start').focus({preventScroll:true});}
+function completeRound(){
+ if(!currentRound.practice&&prefs.record&&!recordedThisRound){
+  recordedThisRound=true;records.push({ts:Date.now(),theme:currentRound.theme,mode:currentRound.mode,pairs:currentRound.pairs,hints:game.hints});records=records.slice(-100);persist();renderHistory();
+ }
+ $('result-title').textContent=currentRound.practice?'연습을 마치셨어요':'오늘의 기억꽃이 피었어요';
+ $('result-description').textContent=currentRound.pairs+'쌍을 완성하셨습니다. 도움을 받아도 괜찮아요. 함께해 주셔서 고맙습니다.';
+ $('story-question').textContent=game.items[0].question;
+ $('again').textContent=currentRound.practice?'이제 본 놀이 시작':'한 번 더 즐기기';
+ stopSpeech();speak(currentRound.practice?'연습을 마치셨어요. 이제 본 놀이를 즐겨보세요.':'모든 짝을 찾으셨어요. 함께해 주셔서 고맙습니다.');
+ showDialog('result-dialog');$('again').focus();
+}
+function renderHistory(){
+ $('history-count').textContent='완료한 놀이 '+records.length+'회'+(records.length===100?' · 최근 100회':'');
+ const list=$('history-list');list.replaceChildren();
+ if(!records.length){const li=document.createElement('li');li.textContent='아직 기록이 없습니다. 편하게 놀이를 시작해 보세요.';list.append(li);}
+ records.slice(-8).reverse().forEach((r)=>{
+  const li=document.createElement('li'),title=document.createElement('strong'),sub=document.createElement('span');
+  title.textContent=new Date(r.ts).toLocaleDateString('ko-KR',{year:'numeric',month:'long',day:'numeric'})+' · '+r.pairs+'쌍 완성';
+  sub.textContent=THEMES[r.theme].name+' · '+(r.mode==='word'?'그림과 이름 연결하기':'같은 그림 찾기');
+  li.append(title,sub);list.append(li);
+ });$('clear-history').disabled=!records.length;renderStorageNote();
+}
+$('hero-flower').innerHTML=FLOWER;$('result-flower').innerHTML=FLOWER;
+game=new MemoryGame(render);
+['theme','mode','preview','wrong-time','record-enabled'].forEach((id)=>{$(id).addEventListener('change',()=>{
+ if(game.active())return;
+ prefs.theme=$('theme').value;prefs.mode=$('mode').value;prefs.preview=+$('preview').value;prefs.wrong=+$('wrong-time').value;prefs.record=$('record-enabled').checked;
+ persist();newRound(false,false);
+});});
+document.querySelectorAll('.level').forEach((b)=>b.addEventListener('click',()=>{if(game.active())return;prefs.pairs=+b.dataset.pairs;persist();newRound(false,false);}));
+$('start').addEventListener('click',()=>{if(game.active())askConfirm('새로 시작할까요?','지금 진행하던 놀이를 마치고 새 카드를 준비합니다.','새로 시작하기',()=>newRound(false,true));else newRound(false,true);});
+$('practice').addEventListener('click',()=>newRound(true,true));
+$('ready').addEventListener('click',()=>{game.ready();speak(statusText());const first=$('board').querySelector('button:not(:disabled)');if(first)first.focus({preventScroll:true});});
+$('board').addEventListener('click',(e)=>{const button=e.target.closest('button[data-index]');if(!button)return;const i=+button.dataset.index;if(game.flip(i))speak(game.deck[i].item.name);});
+$('hint').addEventListener('click',()=>{if(game.hint())speak('그림을 다시 천천히 살펴보세요.');});
+$('turn-back').addEventListener('click',()=>game.hideMismatch());
+$('pause').addEventListener('click',pauseRound);
+$('finish').addEventListener('click',()=>askConfirm('오늘 놀이를 마칠까요?','여기서 마치고 놀이 선택으로 돌아갑니다.','놀이 마치기',finishRound));
+$('resume').addEventListener('click',resumeRound);
+$('pause-finish').addEventListener('click',finishRound);
+$('pause-dialog').addEventListener('cancel',(e)=>{e.preventDefault();resumeRound();});
+$('confirm-yes').addEventListener('click',()=>{const action=confirmAction;confirmAction=null;closeDialog('confirm-dialog');if(action)action();});
+$('confirm-no').addEventListener('click',cancelConfirm);
+$('confirm-dialog').addEventListener('cancel',(e)=>{e.preventDefault();cancelConfirm();});
+$('again').addEventListener('click',()=>{closeDialog('result-dialog');newRound(false,true);});
+$('result-close').addEventListener('click',()=>{closeDialog('result-dialog');newRound(false,false);$('start').focus();});
+$('result-dialog').addEventListener('cancel',(e)=>{e.preventDefault();closeDialog('result-dialog');newRound(false,false);$('start').focus();});
+$('font-toggle').addEventListener('click',()=>{prefs.large=!prefs.large;persist();render();});
+const speechAvailable='speechSynthesis' in window&&'SpeechSynthesisUtterance' in window;
+if(!speechAvailable){$('sound-toggle').disabled=true;$('sound-toggle').textContent='음성 미지원';}
+$('sound-toggle').addEventListener('click',()=>{sound=!sound;$('sound-toggle').setAttribute('aria-pressed',String(sound));$('sound-toggle').textContent=sound?'소리 끄기':'소리 켜기';if(sound)speak('소리 안내를 켰습니다.');else stopSpeech();});
+$('help-open').addEventListener('click',()=>{helpPaused=game.pause();stopSpeech();showDialog('help-dialog');$('help-close').focus();});
+function closeHelp(){closeDialog('help-dialog');if(helpPaused)game.resume();helpPaused=false;$('help-open').focus();}
+$('help-close').addEventListener('click',closeHelp);
+$('help-dialog').addEventListener('cancel',(e)=>{e.preventDefault();closeHelp();});
+$('clear-history').addEventListener('click',()=>askConfirm('활동 기록을 지울까요?','이 기기에 남아 있는 활동 기록을 모두 지웁니다.','기록 지우기',()=>{records=[];persist();renderHistory();game.resume();$('history-count').focus();}));
+document.addEventListener('visibilitychange',()=>{if(document.hidden&&game.active()&&!game.paused)pauseRound();});
+window.addEventListener('pagehide',stopSpeech);
+renderHistory();newRound(false,false);
+</script>
 </body>
 </html>

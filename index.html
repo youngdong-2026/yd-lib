@@ -92,6 +92,8 @@ input[type=checkbox]{width:28px;height:28px;flex:none;accent-color:var(--green)}
 .empty{font-size:.9em;color:var(--muted);margin:16px 0 4px}
 footer{padding:28px 0 36px;font-size:17px;color:var(--muted)}
 footer p{margin:6px 0}
+#site-footer{text-align:center;border-top:1px solid var(--line, #deded8);margin-top:24px;line-height:1.7}
+#site-footer .footer-university{font-weight:700;color:var(--ink, #253b32);font-size:1.15em}
 dialog{border:0;border-radius:24px;background:var(--white);color:var(--ink);width:min(620px,calc(100% - 28px));max-height:90dvh;overflow-y:auto;padding:32px;box-shadow:0 20px 70px #14261c40}
 dialog::backdrop{background:#182d25c9}
 dialog h2{font-size:clamp(28px,4vw,36px);margin:0 0 14px;line-height:1.35}
@@ -300,9 +302,8 @@ body.playing{height:100vh;height:100dvh;min-height:0;display:flex;flex-direction
 </section>
 </main>
 <footer class="shell" id="site-footer">
-<p>기억꽃 놀이터 · 1.2 화면 분리판</p>
-<p>이 놀이는 기억·인지활동과 대화를 돕는 보조도구입니다.</p>
-<p>치매를 진단하거나 예방 효과를 판정하는 검사가 아닙니다. 불편하거나 피곤하면 쉬어가세요.</p>
+<p class="footer-university">유원대학교</p>
+<p>(29131) 충북 영동군 영동읍 대학로 310</p>
 </footer>
 <dialog id="help-dialog" aria-labelledby="help-title">
 <h2 id="help-title">이렇게 즐겨보세요</h2>

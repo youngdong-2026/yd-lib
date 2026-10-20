@@ -3,6 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="application-version" content="1.1.0">
 <meta name="theme-color" content="#28594a">
 <meta name="description" content="큰 그림으로 천천히 즐기는 어르신 기억·인지활동 카드 놀이. 시간제한과 순위 없이 생활 속 그림의 짝을 찾아보세요.">
 <title>기억꽃 놀이터 | 유원대학교 도서관</title>
@@ -202,6 +203,7 @@ dialog{padding:25px 20px}
 </details>
 </main>
 <footer class="shell">
+<p>기억꽃 놀이터 · 1.1 수정판</p>
 <p>이 놀이는 기억·인지활동과 대화를 돕는 보조도구입니다.</p>
 <p>치매를 진단하거나 예방 효과를 판정하는 검사가 아닙니다. 불편하거나 피곤하면 쉬어가세요.</p>
 </footer>
@@ -281,7 +283,7 @@ const BACK = '<svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-
 
 // 순수 게임 상태: 화면·저장소·음성 기능과 분리하여 동작을 검사할 수 있습니다.
 class MemoryGame {
- constructor(notify,clock){this.notify=notify||function(){};this.clock=clock||{now:Date.now,set:setTimeout,clear:clearTimeout};this.epoch=0;this.task=null;this.phase='idle';this.paused=false;this.deck=[];this.selected=[];this.found=0;this.hints=0;this.moves=0;}
+ constructor(notify,clock){this.notify=notify||function(){};this.clock=clock||{now:()=>Date.now(),set:(fn,ms)=>window.setTimeout(fn,ms),clear:(id)=>window.clearTimeout(id)};this.epoch=0;this.task=null;this.phase='idle';this.paused=false;this.deck=[];this.selected=[];this.found=0;this.hints=0;this.moves=0;}
  cancelTask(){if(this.task){this.clock.clear(this.task.id);this.task=null;}}
  reset(items,options){
   this.cancelTask();this.epoch++;this.options=Object.assign({},options);this.items=items.slice();this.deck=[];
@@ -373,10 +375,10 @@ function render(){
  document.body.classList.toggle('large-text',prefs.large);
  $('font-toggle').setAttribute('aria-pressed',String(prefs.large));$('font-toggle').textContent=prefs.large?'글씨 기본 크기':'글씨 더 크게';
  $('theme').value=prefs.theme;$('mode').value=prefs.mode;$('preview').value=String(prefs.preview);$('wrong-time').value=String(prefs.wrong);$('record-enabled').checked=prefs.record;
- document.querySelectorAll('.level').forEach((b)=>{b.setAttribute('aria-pressed',String(+b.dataset.pairs===prefs.pairs));b.disabled=active;});
+ document.querySelectorAll('.level').forEach((b)=>{b.setAttribute('aria-pressed',String(+b.dataset.pairs===prefs.pairs));b.disabled=false;});
  ['theme','mode','preview','wrong-time','record-enabled'].forEach((id)=>{$(id).disabled=active;});
  $('practice').disabled=active;$('start').textContent=active?'새로 시작하기':'시작하기';
- $('setup-note').textContent=active?'주제나 단계를 바꾸려면 ‘놀이 마치기’를 눌러주세요.':'이름을 입력하지 않아도 됩니다. 순위와 시간 경쟁은 없어요.';
+ $('setup-note').textContent=active?'단계를 바꾸면 새 카드로 시작합니다. 주제·놀이 방법은 ‘놀이 마치기’ 후 바꿀 수 있어요.':'이름을 입력하지 않아도 됩니다. 순위와 시간 경쟁은 없어요.';
  const n=game.items.length;
  $('activity-title').textContent=(currentRound.practice?'연습 · ':'')+(currentRound.mode==='picture'?'같은 그림 찾기':'그림과 이름 연결하기');
  $('activity-badge').textContent='카드 '+n*2+'장 · '+n+'쌍';
@@ -453,7 +455,13 @@ game=new MemoryGame(render);
  prefs.theme=$('theme').value;prefs.mode=$('mode').value;prefs.preview=+$('preview').value;prefs.wrong=+$('wrong-time').value;prefs.record=$('record-enabled').checked;
  persist();newRound(false,false);
 });});
-document.querySelectorAll('.level').forEach((b)=>b.addEventListener('click',()=>{if(game.active())return;prefs.pairs=+b.dataset.pairs;persist();newRound(false,false);}));
+document.querySelectorAll('.level').forEach((b)=>b.addEventListener('click',()=>{
+ const nextPairs=+b.dataset.pairs;
+ if(game.active()){
+  if(nextPairs===prefs.pairs&&!currentRound.practice)return;
+  askConfirm('놀이 단계를 바꿀까요?','현재 놀이를 마치고 카드 '+nextPairs*2+'장으로 새로 시작합니다.','이 단계로 시작하기',()=>{prefs.pairs=nextPairs;persist();newRound(false,true);});
+ }else{prefs.pairs=nextPairs;persist();newRound(false,false);}
+}));
 $('start').addEventListener('click',()=>{if(game.active())askConfirm('새로 시작할까요?','지금 진행하던 놀이를 마치고 새 카드를 준비합니다.','새로 시작하기',()=>newRound(false,true));else newRound(false,true);});
 $('practice').addEventListener('click',()=>newRound(true,true));
 $('ready').addEventListener('click',()=>{game.ready();speak(statusText());const first=$('board').querySelector('button:not(:disabled)');if(first)first.focus({preventScroll:true});});

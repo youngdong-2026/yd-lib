@@ -1,0 +1,1070 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>직소퍼즐 맞추기 게임</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Tone.js for Sound Effects -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+    <!-- Canvas Confetti -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    
+    <style>
+        @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
+        body {
+            font-family: 'Pretendard', sans-serif;
+            touch-action: manipulation;
+            user-select: none;
+            overflow: hidden; /* 스크롤 없이 한 화면에 전체 표시 */
+        }
+
+        .piece-canvas {
+            filter: drop-shadow(0px 3px 6px rgba(0, 0, 0, 0.5));
+            cursor: grab;
+            transition: transform 0.15s ease, filter 0.15s ease;
+        }
+        .piece-canvas:active {
+            cursor: grabbing;
+            filter: drop-shadow(0px 8px 14px rgba(0, 0, 0, 0.7));
+        }
+        .piece-canvas.placed {
+            cursor: default;
+            filter: none !important;
+            box-shadow: none !important;
+        }
+    </style>
+</head>
+<body class="bg-slate-900 text-slate-100 h-screen w-screen flex flex-col justify-between select-none">
+
+    <!-- Header -->
+    <header class="bg-slate-800/90 backdrop-blur border-b border-slate-700 px-4 py-2.5 z-40 flex-shrink-0">
+        <div class="max-w-7xl mx-auto flex justify-between items-center">
+            <h1 class="text-lg md:text-xl font-bold bg-gradient-to-r from-blue-400 to-indigo-400 bg-clip-text text-transparent flex items-center gap-2">
+                <i class="fa-solid fa-puzzle-piece text-blue-400"></i> 직소퍼즐 마스터
+            </h1>
+            <div id="game-stats" class="hidden flex items-center gap-2 md:gap-3 text-xs md:text-sm font-medium">
+                <div class="bg-slate-700/60 px-3 py-1 rounded-lg flex items-center gap-1.5 border border-slate-600">
+                    <i class="fa-regular fa-clock text-indigo-400"></i>
+                    <span id="timer-display" class="font-mono text-indigo-200">00:00</span>
+                </div>
+                <div class="bg-slate-700/60 px-3 py-1 rounded-lg flex items-center gap-1.5 border border-slate-600">
+                    <i class="fa-solid fa-check-double text-emerald-400"></i>
+                    <span id="progress-display" class="font-mono text-emerald-200">0 / 0</span>
+                </div>
+                <button id="btn-leaderboard" class="bg-indigo-600/80 hover:bg-indigo-600 px-2.5 py-1 rounded-lg text-white transition flex items-center gap-1 border border-indigo-500 shadow">
+                    <i class="fa-solid fa-trophy text-amber-300"></i> <span class="hidden sm:inline">기록판</span>
+                </button>
+                <button id="btn-shuffle" class="bg-slate-700 hover:bg-slate-600 px-2.5 py-1 rounded-lg text-slate-200 transition flex items-center gap-1 border border-slate-600">
+                    <i class="fa-solid fa-shuffle text-indigo-400"></i> <span class="hidden sm:inline">재배치</span>
+                </button>
+                <button id="btn-restart" class="bg-slate-700 hover:bg-slate-600 px-2.5 py-1 rounded-lg text-slate-200 transition flex items-center gap-1 border border-slate-600">
+                    <i class="fa-solid fa-rotate-left"></i> <span class="hidden sm:inline">설정으로</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Workspace -->
+    <main class="flex-grow relative flex items-center justify-center p-2 overflow-hidden w-full h-full">
+        
+        <!-- 1. Config Screen -->
+        <div id="config-screen" class="max-w-lg w-full bg-slate-800 rounded-2xl p-6 border border-slate-700 shadow-2xl space-y-5 z-50 my-auto">
+            <div class="text-center space-y-1">
+                <h2 class="text-2xl font-bold text-white">퍼즐 환경설정</h2>
+                <p class="text-slate-400 text-xs">사진과 난이도를 설정 후 시작하세요</p>
+            </div>
+
+            <!-- Image Upload & Sample Selection -->
+            <div class="space-y-2">
+                <div class="flex justify-between items-center">
+                    <label class="block text-sm font-semibold text-slate-300">1. 사진 선택 (원하는 사진 업로드 가능)</label>
+                    <button id="btn-open-leaderboard-config" class="text-xs text-indigo-400 hover:underline flex items-center gap-1 font-medium">
+                        <i class="fa-solid fa-trophy text-amber-400"></i> 명예의 전당 보기
+                    </button>
+                </div>
+                <div class="flex items-center justify-center w-full">
+                    <label for="image-input" class="flex flex-col items-center justify-center w-full h-40 border-2 border-indigo-500/60 border-dashed rounded-xl cursor-pointer bg-slate-700/40 hover:bg-slate-700/80 hover:border-indigo-400 transition group relative overflow-hidden shadow-inner">
+                        <img id="image-preview" class="absolute inset-0 w-full h-full object-cover hidden" alt="Preview">
+                        
+                        <!-- Upload Overlay Banner (Always Visible or Hover) -->
+                        <div id="upload-overlay" class="absolute inset-0 bg-slate-950/50 hover:bg-slate-950/30 transition flex flex-col items-center justify-center p-3 text-center z-10 backdrop-blur-[1px]">
+                            <div class="bg-indigo-600/90 text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-lg flex items-center gap-1.5 border border-indigo-400 mb-1 group-hover:scale-105 transition transform">
+                                <i class="fa-solid fa-cloud-arrow-up text-sm"></i>
+                                <span id="upload-btn-text">내 컴퓨터/모바일 사진 업로드</span>
+                            </div>
+                            <p class="text-[11px] text-slate-200 font-medium drop-shadow-md">영역을 클릭하면 원하는 이미지 파일로 교체됩니다</p>
+                        </div>
+
+                        <input id="image-input" type="file" accept="image/*" class="hidden" />
+                    </label>
+                </div>
+                <div class="flex items-center gap-1.5 pt-1 flex-wrap">
+                    <span class="text-xs text-slate-400 font-medium">샘플 이미지:</span>
+                    <button class="sample-btn px-2.5 py-1 text-xs bg-indigo-600/30 border border-indigo-500/50 hover:bg-indigo-600 text-slate-200 rounded-md transition" data-url="https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=800&auto=format&fit=crop">폭포 풍경</button>
+                    <button class="sample-btn px-2.5 py-1 text-xs bg-slate-700 hover:bg-slate-600 text-slate-200 rounded-md transition" data-url="https://images.unsplash.com/photo-1543466835-00a7907e9de1?w=800&auto=format&fit=crop">강아지</button>
+                    <button class="sample-btn px-2.5 py-1 text-xs bg-slate-700 hover:bg-slate-600 text-slate-200 rounded-md transition" data-url="https://picsum.photos/id/1015/800/600">자연 풍경</button>
+                </div>
+            </div>
+
+            <!-- Piece Grid Selector -->
+            <div class="space-y-2.5">
+                <div class="flex justify-between items-center">
+                    <label class="block text-sm font-semibold text-slate-300">2. 퍼즐 조각 수 설정</label>
+                    <span id="pieces-count-label" class="text-xs font-bold text-indigo-400">12조각 (4x3)</span>
+                </div>
+                
+                <div class="grid grid-cols-3 sm:grid-cols-6 gap-1.5">
+                    <button type="button" class="grid-btn py-1.5 text-xs font-semibold rounded-lg bg-slate-700 text-slate-300 hover:bg-indigo-600 hover:text-white transition" data-cols="3" data-rows="2">6조각</button>
+                    <button type="button" class="grid-btn py-1.5 text-xs font-semibold rounded-lg bg-indigo-600 text-white transition active-grid" data-cols="4" data-rows="3">12조각</button>
+                    <button type="button" class="grid-btn py-1.5 text-xs font-semibold rounded-lg bg-slate-700 text-slate-300 hover:bg-indigo-600 hover:text-white transition" data-cols="5" data-rows="4">20조각</button>
+                    <button type="button" class="grid-btn py-1.5 text-xs font-semibold rounded-lg bg-slate-700 text-slate-300 hover:bg-indigo-600 hover:text-white transition" data-cols="6" data-rows="5">30조각</button>
+                    <button type="button" class="grid-btn py-1.5 text-xs font-semibold rounded-lg bg-slate-700 text-slate-300 hover:bg-indigo-600 hover:text-white transition" data-cols="8" data-rows="6">48조각</button>
+                    <button type="button" class="grid-btn py-1.5 text-xs font-semibold rounded-lg bg-slate-700 text-slate-300 hover:bg-indigo-600 hover:text-white transition" data-cols="8" data-rows="8">64조각</button>
+                </div>
+
+                <div class="bg-slate-700/40 p-2.5 rounded-xl border border-slate-700 flex items-center justify-between text-xs gap-2">
+                    <span class="text-slate-300 font-medium">직접 입력:</span>
+                    <div class="flex items-center gap-1.5">
+                        <label class="flex items-center gap-1 text-slate-400">
+                            가로
+                            <input type="number" id="custom-cols" min="2" max="12" value="4" class="w-12 bg-slate-800 text-center font-bold text-indigo-300 border border-slate-600 rounded py-0.5 focus:outline-none focus:border-indigo-500">
+                        </label>
+                        <span class="text-slate-500">×</span>
+                        <label class="flex items-center gap-1 text-slate-400">
+                            세로
+                            <input type="number" id="custom-rows" min="2" max="12" value="3" class="w-12 bg-slate-800 text-center font-bold text-indigo-300 border border-slate-600 rounded py-0.5 focus:outline-none focus:border-indigo-500">
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Timer Settings -->
+            <div class="space-y-2">
+                <label class="block text-sm font-semibold text-slate-300">3. 제한시간 설정</label>
+                <div class="grid grid-cols-2 gap-2">
+                    <label class="flex items-center gap-2 p-2.5 bg-slate-700/50 rounded-lg cursor-pointer border border-slate-600 hover:border-slate-500 transition">
+                        <input type="radio" name="timer-mode" value="unlimited" checked class="accent-indigo-500">
+                        <span class="text-xs text-slate-200 font-medium">시간 무제한</span>
+                    </label>
+                    <label class="flex items-center gap-2 p-2.5 bg-slate-700/50 rounded-lg cursor-pointer border border-slate-600 hover:border-slate-500 transition">
+                        <input type="radio" name="timer-mode" value="limited" class="accent-indigo-500">
+                        <span class="text-xs text-slate-200 font-medium">제한시간 적용</span>
+                    </label>
+                </div>
+                <div id="time-limit-container" class="hidden pt-1 flex items-center gap-2">
+                    <input type="range" id="time-limit-range" min="30" max="600" step="30" value="180" class="w-full accent-indigo-500">
+                    <span id="time-limit-text" class="text-xs font-mono text-indigo-300 w-14 text-right font-bold">03:00</span>
+                </div>
+            </div>
+
+            <!-- Start Game Button -->
+            <button id="btn-start" class="w-full py-3 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-xl shadow-lg transition active:scale-98 flex items-center justify-center gap-2 text-base">
+                <i class="fa-solid fa-play"></i> 퍼즐 시작하기
+            </button>
+        </div>
+
+        <!-- 2. Game Screen Playground (Fullscreen, centered board with surrounding scattered pieces) -->
+        <div id="game-screen" class="hidden absolute inset-0 w-full h-full bg-slate-950 flex items-center justify-center overflow-hidden">
+            
+            <!-- Centered Puzzle Board Base -->
+            <div id="board-container" class="relative bg-slate-800/90 rounded-xl border-2 border-indigo-500/60 shadow-2xl z-10 transition-all duration-300">
+                <!-- Faint background guide image (Opacity 25%) -->
+                <canvas id="bg-guide-canvas" class="absolute inset-0 opacity-25 pointer-events-none rounded-lg"></canvas>
+                <!-- Visual Outlines Grid SVG -->
+                <svg id="grid-svg" class="absolute inset-0 pointer-events-none w-full h-full z-10 opacity-80"></svg>
+                <!-- Placed pieces layer -->
+                <div id="board-pieces-layer" class="absolute inset-0 z-20"></div>
+            </div>
+
+            <!-- Scattered Floating Unplaced Pieces Container (Covers entire screen) -->
+            <div id="scatter-layer" class="absolute inset-0 z-30 pointer-events-none"></div>
+        </div>
+    </main>
+
+    <!-- Completion / Game Over Modal -->
+    <div id="modal-overlay" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center opacity-0 pointer-events-none transition-opacity duration-300 p-4">
+        <div id="modal-content" class="bg-slate-800 border border-slate-700 rounded-2xl p-6 max-w-sm w-full text-center shadow-2xl transform scale-95 transition-transform duration-300">
+            <div id="modal-icon-container" class="w-16 h-16 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center mx-auto mb-3 text-3xl border border-emerald-500/40">
+                <i class="fa-solid fa-trophy"></i>
+            </div>
+            <h3 id="modal-title" class="text-xl font-bold text-white mb-1">퍼즐 완성!</h3>
+            <p id="modal-desc" class="text-slate-300 text-xs mb-5">축하합니다! 퍼즐을 완벽히 완성하셨습니다.</p>
+
+            <div class="bg-slate-900/60 rounded-xl p-3 mb-5 space-y-2 border border-slate-700/50 text-xs">
+                <div class="flex justify-between">
+                    <span class="text-slate-400">소요 시간</span>
+                    <span id="final-time" class="font-bold font-mono text-indigo-300">01:23</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-slate-400">맞춘 조각</span>
+                    <span id="final-pieces" class="font-bold font-mono text-emerald-300">12 / 12</span>
+                </div>
+            </div>
+
+            <!-- Name Input for High Score -->
+            <div id="nickname-input-container" class="mb-4 text-left space-y-1.5">
+                <label for="player-name" class="block text-xs font-semibold text-indigo-300">🎉 기록 등록 (플레이어 이름)</label>
+                <div class="flex gap-2">
+                    <input type="text" id="player-name" maxlength="10" placeholder="이름을 입력하세요" class="flex-grow bg-slate-900 border border-indigo-500/50 rounded-xl px-3 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-indigo-400">
+                    <button id="btn-save-score" class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold px-3 rounded-xl transition">저장</button>
+                </div>
+            </div>
+
+            <button id="btn-modal-restart" class="w-full py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-xl shadow-lg transition">
+                다시하기
+            </button>
+        </div>
+    </div>
+
+    <!-- Leaderboard Modal Popup -->
+    <div id="leaderboard-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center opacity-0 pointer-events-none transition-opacity duration-300 p-4">
+        <div class="bg-slate-800 border border-slate-700 rounded-2xl p-5 max-w-md w-full shadow-2xl flex flex-col max-h-[85vh]">
+            <div class="flex justify-between items-center mb-4 pb-2 border-b border-slate-700">
+                <h3 class="text-lg font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-trophy text-amber-400"></i> 명예의 전당 (Top 10)
+                </h3>
+                <button id="btn-close-leaderboard" class="text-slate-400 hover:text-white text-lg">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <div class="overflow-y-auto flex-grow space-y-2 pr-1" id="leaderboard-list">
+                <!-- Dynamic ranking items -->
+            </div>
+
+            <div class="mt-4 pt-3 border-t border-slate-700 flex justify-between items-center text-xs">
+                <button id="btn-reset-leaderboard" class="text-rose-400 hover:text-rose-300 flex items-center gap-1 font-medium transition">
+                    <i class="fa-solid fa-trash-can"></i> 기록 전체 리셋
+                </button>
+                <button id="btn-confirm-leaderboard" class="bg-slate-700 hover:bg-slate-600 text-slate-200 px-4 py-1.5 rounded-lg font-medium transition">
+                    닫기
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global variables & Config
+        let selectedImageSrc = 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=800&auto=format&fit=crop';
+        let cols = 4;
+        let rows = 3;
+        let isLimitedTime = false;
+        let timeLimitSeconds = 180;
+        
+        let loadedImage = null;
+        let boardWidth = 500;
+        let boardHeight = 375;
+        let pieceWidth = 0;
+        let pieceHeight = 0;
+        
+        let pieces = [];
+        let placedCount = 0;
+        let timerInterval = null;
+        let secondsElapsed = 0;
+        let isGameActive = false;
+
+        let horizontalEdges = [];
+        let verticalEdges = [];
+
+        // DOM Elements
+        const configScreen = document.getElementById('config-screen');
+        const gameScreen = document.getElementById('game-screen');
+        const gameStats = document.getElementById('game-stats');
+        const imageInput = document.getElementById('image-input');
+        const imagePreview = document.getElementById('image-preview');
+        const piecesCountLabel = document.getElementById('pieces-count-label');
+        const customColsInput = document.getElementById('custom-cols');
+        const customRowsInput = document.getElementById('custom-rows');
+        const timeLimitContainer = document.getElementById('time-limit-container');
+        const timeLimitRange = document.getElementById('time-limit-range');
+        const timeLimitText = document.getElementById('time-limit-text');
+        const btnStart = document.getElementById('btn-start');
+        const btnRestart = document.getElementById('btn-restart');
+        const btnShuffle = document.getElementById('btn-shuffle');
+        
+        const boardContainer = document.getElementById('board-container');
+        const bgGuideCanvas = document.getElementById('bg-guide-canvas');
+        const gridSvg = document.getElementById('grid-svg');
+        const boardPiecesLayer = document.getElementById('board-pieces-layer');
+        const scatterLayer = document.getElementById('scatter-layer');
+
+        const timerDisplay = document.getElementById('timer-display');
+        const progressDisplay = document.getElementById('progress-display');
+        
+        const modalOverlay = document.getElementById('modal-overlay');
+        const modalContent = document.getElementById('modal-content');
+        const modalTitle = document.getElementById('modal-title');
+        const modalDesc = document.getElementById('modal-desc');
+        const modalIconContainer = document.getElementById('modal-icon-container');
+        const finalTime = document.getElementById('final-time');
+        const finalPieces = document.getElementById('final-pieces');
+        const btnModalRestart = document.getElementById('btn-modal-restart');
+
+        // Leaderboard Elements
+        const leaderboardModal = document.getElementById('leaderboard-modal');
+        const leaderboardList = document.getElementById('leaderboard-list');
+        const btnLeaderboard = document.getElementById('btn-leaderboard');
+        const btnOpenLeaderboardConfig = document.getElementById('btn-open-leaderboard-config');
+        const btnCloseLeaderboard = document.getElementById('btn-close-leaderboard');
+        const btnConfirmLeaderboard = document.getElementById('btn-confirm-leaderboard');
+        const btnResetLeaderboard = document.getElementById('btn-reset-leaderboard');
+        const nicknameInputContainer = document.getElementById('nickname-input-container');
+        const playerNameInput = document.getElementById('player-name');
+        const btnSaveScore = document.getElementById('btn-save-score');
+
+        // Tone.js Sound Effects
+        const AudioEngine = {
+            synths: null,
+            init() {
+                if (!this.synths) {
+                    this.synthSuccess = new Tone.Synth({
+                        oscillator: { type: 'triangle' },
+                        envelope: { attack: 0.005, decay: 0.1, sustain: 0.3, release: 0.2 }
+                    }).toDestination();
+
+                    this.synthFail = new Tone.Synth({
+                        oscillator: { type: 'sawtooth' },
+                        envelope: { attack: 0.01, decay: 0.15, sustain: 0.1, release: 0.1 }
+                    }).toDestination();
+
+                    this.synthWin = new Tone.PolySynth(Tone.Synth).toDestination();
+                }
+            },
+            playSnap() {
+                try {
+                    Tone.start();
+                    this.init();
+                    this.synthSuccess.triggerAttackRelease("E5", "16n");
+                } catch(e){}
+            },
+            playError() {
+                try {
+                    Tone.start();
+                    this.init();
+                    this.synthFail.triggerAttackRelease("C3", "16n");
+                } catch(e){}
+            },
+            playWin() {
+                try {
+                    Tone.start();
+                    this.init();
+                    const now = Tone.now();
+                    this.synthWin.triggerAttackRelease(["C5", "E5", "G5"], "8n", now);
+                    this.synthWin.triggerAttackRelease(["G5", "B5", "D6"], "8n", now + 0.2);
+                    this.synthWin.triggerAttackRelease(["C6"], "4n", now + 0.4);
+                } catch(e){}
+            }
+        };
+
+        // Image Preview Handler
+        function showPreview(src) {
+            if (imagePreview) {
+                imagePreview.src = src;
+                imagePreview.classList.remove('hidden');
+            }
+        }
+
+        // Config Listeners
+        imageInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    selectedImageSrc = event.target.result;
+                    showPreview(selectedImageSrc);
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        document.querySelectorAll('.sample-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                document.querySelectorAll('.sample-btn').forEach(b => {
+                    b.classList.remove('bg-indigo-600/30', 'border', 'border-indigo-500/50');
+                    b.classList.add('bg-slate-700');
+                });
+                btn.classList.remove('bg-slate-700');
+                btn.classList.add('bg-indigo-600/30', 'border', 'border-indigo-500/50');
+
+                selectedImageSrc = btn.dataset.url;
+                showPreview(selectedImageSrc);
+            });
+        });
+
+        showPreview(selectedImageSrc);
+
+        document.querySelectorAll('.grid-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.grid-btn').forEach(b => {
+                    b.classList.remove('bg-indigo-600', 'text-white');
+                    b.classList.add('bg-slate-700', 'text-slate-300');
+                });
+                btn.classList.remove('bg-slate-700', 'text-slate-300');
+                btn.classList.add('bg-indigo-600', 'text-white');
+                
+                cols = parseInt(btn.dataset.cols, 10);
+                rows = parseInt(btn.dataset.rows, 10);
+                if (customColsInput) customColsInput.value = cols;
+                if (customRowsInput) customRowsInput.value = rows;
+                updatePiecesLabel();
+            });
+        });
+
+        const handleCustomInputChange = () => {
+            let c = parseInt(customColsInput.value, 10) || 2;
+            let r = parseInt(customRowsInput.value, 10) || 2;
+            c = Math.max(2, Math.min(12, c));
+            r = Math.max(2, Math.min(12, r));
+            cols = c;
+            rows = r;
+            
+            document.querySelectorAll('.grid-btn').forEach(b => {
+                b.classList.remove('bg-indigo-600', 'text-white');
+                b.classList.add('bg-slate-700', 'text-slate-300');
+            });
+            updatePiecesLabel();
+        };
+
+        if (customColsInput) customColsInput.addEventListener('input', handleCustomInputChange);
+        if (customRowsInput) customRowsInput.addEventListener('input', handleCustomInputChange);
+
+        function updatePiecesLabel() {
+            if (piecesCountLabel) {
+                piecesCountLabel.textContent = `${cols * rows}조각 (${cols}x${rows})`;
+            }
+        }
+
+        document.querySelectorAll('input[name="timer-mode"]').forEach(radio => {
+            radio.addEventListener('change', (e) => {
+                isLimitedTime = (e.target.value === 'limited');
+                if (isLimitedTime) {
+                    timeLimitContainer.classList.remove('hidden');
+                } else {
+                    timeLimitContainer.classList.add('hidden');
+                }
+            });
+        });
+
+        if (timeLimitRange) {
+            timeLimitRange.addEventListener('input', (e) => {
+                timeLimitSeconds = parseInt(e.target.value, 10);
+                if (timeLimitText) timeLimitText.textContent = formatTime(timeLimitSeconds);
+            });
+        }
+
+        function formatTime(totalSec) {
+            const m = Math.floor(totalSec / 60).toString().padStart(2, '0');
+            const s = (totalSec % 60).toString().padStart(2, '0');
+            return `${m}:${s}`;
+        }
+
+        btnStart.addEventListener('click', startGame);
+        btnRestart.addEventListener('click', resetToConfig);
+        btnModalRestart.addEventListener('click', () => {
+            hideModal();
+            resetToConfig();
+        });
+        btnShuffle.addEventListener('click', scatterUnplacedPieces);
+
+        // Leaderboard Listeners
+        btnLeaderboard.addEventListener('click', showLeaderboardModal);
+        btnOpenLeaderboardConfig.addEventListener('click', showLeaderboardModal);
+        btnCloseLeaderboard.addEventListener('click', hideLeaderboardModal);
+        btnConfirmLeaderboard.addEventListener('click', hideLeaderboardModal);
+        btnResetLeaderboard.addEventListener('click', resetLeaderboard);
+        btnSaveScore.addEventListener('click', saveCurrentScore);
+
+        function getLeaderboardData() {
+            try {
+                return JSON.parse(localStorage.getItem('jigsaw_leaderboard') || '[]');
+            } catch(e) {
+                return [];
+            }
+        }
+
+        function saveCurrentScore() {
+            const name = playerNameInput.value.trim() || '익명 플레이어';
+            const boardSizeStr = `${cols}x${rows} (${cols * rows}조각)`;
+            const record = {
+                name: name,
+                time: secondsElapsed,
+                pieces: cols * rows,
+                boardSize: boardSizeStr,
+                date: new Date().toLocaleDateString()
+            };
+
+            const list = getLeaderboardData();
+            list.push(record);
+            list.sort((a, b) => {
+                if (b.pieces !== a.pieces) return b.pieces - a.pieces;
+                return a.time - b.time;
+            });
+
+            localStorage.setItem('jigsaw_leaderboard', JSON.stringify(list.slice(0, 30)));
+            nicknameInputContainer.classList.add('hidden');
+            showLeaderboardModal();
+        }
+
+        function renderLeaderboard() {
+            const list = getLeaderboardData();
+            leaderboardList.innerHTML = '';
+
+            if (list.length === 0) {
+                leaderboardList.innerHTML = `
+                    <div class="text-center py-8 text-slate-500 text-xs">
+                        <i class="fa-regular fa-folder-open text-2xl mb-2 block"></i>
+                        등록된 랭킹 기록이 없습니다.<br>퍼즐을 완성하고 첫 기록을 남겨보세요!
+                    </div>
+                `;
+                return;
+            }
+
+            list.forEach((item, index) => {
+                const badgeColor = index === 0 ? 'bg-amber-500/20 text-amber-400 border-amber-500/40' :
+                                   index === 1 ? 'bg-slate-400/20 text-slate-300 border-slate-400/40' :
+                                   index === 2 ? 'bg-amber-700/20 text-amber-600 border-amber-700/40' : 'bg-slate-700/50 text-slate-400 border-slate-600';
+                
+                const rankIcon = index === 0 ? '<i class="fa-solid fa-crown text-amber-400"></i>' : `#${index + 1}`;
+
+                const row = document.createElement('div');
+                row.className = `flex items-center justify-between bg-slate-900/60 p-2.5 rounded-xl border border-slate-700/50 text-xs`;
+                row.innerHTML = `
+                    <div class="flex items-center gap-2.5">
+                        <div class="w-7 h-7 rounded-lg border font-bold flex items-center justify-center text-xs ${badgeColor}">
+                            ${rankIcon}
+                        </div>
+                        <div>
+                            <div class="font-bold text-slate-200">${escapeHtml(item.name)}</div>
+                            <div class="text-[10px] text-slate-400">${item.boardSize} · ${item.date}</div>
+                        </div>
+                    </div>
+                    <div class="text-right font-mono font-bold text-indigo-300">
+                        ${formatTime(item.time)}
+                    </div>
+                `;
+                leaderboardList.appendChild(row);
+            });
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function showLeaderboardModal() {
+            renderLeaderboard();
+            leaderboardModal.classList.remove('pointer-events-none', 'opacity-0');
+        }
+
+        function hideLeaderboardModal() {
+            leaderboardModal.classList.add('pointer-events-none', 'opacity-0');
+        }
+
+        function resetLeaderboard() {
+            if (confirm('모든 기록을 삭제하시겠습니까?')) {
+                localStorage.removeItem('jigsaw_leaderboard');
+                renderLeaderboard();
+            }
+        }
+
+        function startGame() {
+            configScreen.classList.add('hidden');
+            gameScreen.classList.remove('hidden');
+            gameStats.classList.remove('hidden');
+
+            boardPiecesLayer.innerHTML = '';
+            scatterLayer.innerHTML = '';
+            placedCount = 0;
+            secondsElapsed = 0;
+            isGameActive = true;
+
+            updateProgress();
+
+            loadedImage = new Image();
+            loadedImage.crossOrigin = "anonymous";
+            loadedImage.src = selectedImageSrc;
+            loadedImage.onload = () => {
+                setupBoardDimensions();
+                generateEdges();
+                drawGuideBackground();
+                drawGridLinesSVG();
+                createPieces();
+
+                requestAnimationFrame(() => {
+                    scatterUnplacedPieces();
+                });
+
+                startTimer();
+            };
+        }
+
+        function setupBoardDimensions() {
+            const maxW = window.innerWidth * 0.55;
+            const maxH = window.innerHeight * 0.65;
+            const imgAspect = loadedImage.width / loadedImage.height;
+
+            if (maxW / maxH > imgAspect) {
+                boardHeight = Math.min(maxH, 600);
+                boardWidth = boardHeight * imgAspect;
+            } else {
+                boardWidth = Math.min(maxW, 800);
+                boardHeight = boardWidth / imgAspect;
+            }
+
+            boardContainer.style.width = `${boardWidth}px`;
+            boardContainer.style.height = `${boardHeight}px`;
+
+            pieceWidth = boardWidth / cols;
+            pieceHeight = boardHeight / rows;
+        }
+
+        function generateEdges() {
+            horizontalEdges = [];
+            for (let r = 0; r < rows - 1; r++) {
+                horizontalEdges[r] = [];
+                for (let c = 0; c < cols; c++) {
+                    horizontalEdges[r][c] = Math.random() < 0.5 ? 1 : -1;
+                }
+            }
+
+            verticalEdges = [];
+            for (let r = 0; r < rows; r++) {
+                verticalEdges[r] = [];
+                for (let c = 0; c < cols - 1; c++) {
+                    verticalEdges[r][c] = Math.random() < 0.5 ? 1 : -1;
+                }
+            }
+        }
+
+        function drawGuideBackground() {
+            bgGuideCanvas.width = boardWidth;
+            bgGuideCanvas.height = boardHeight;
+            const ctx = bgGuideCanvas.getContext('2d');
+            ctx.drawImage(loadedImage, 0, 0, boardWidth, boardHeight);
+        }
+
+        function generatePiecePath(ctx, c, r, w, h, pad, forSVG = false) {
+            const top = (r === 0) ? 0 : -horizontalEdges[r - 1][c];
+            const bottom = (r === rows - 1) ? 0 : horizontalEdges[r][c];
+            const left = (c === 0) ? 0 : -verticalEdges[r][c - 1];
+            const right = (c === cols - 1) ? 0 : verticalEdges[r][c];
+
+            const ox = forSVG ? c * w : pad;
+            const oy = forSVG ? r * h : pad;
+
+            const tabW = Math.min(w, h) * 0.22;
+            const tabH = Math.min(w, h) * 0.20;
+
+            if (!forSVG) ctx.beginPath();
+
+            ctx.moveTo(ox, oy);
+
+            // Top edge
+            if (top === 0) {
+                ctx.lineTo(ox + w, oy);
+            } else {
+                ctx.lineTo(ox + w * 0.38, oy);
+                ctx.bezierCurveTo(ox + w * 0.36, oy + top * tabH * 0.8, ox + w * 0.42, oy + top * tabH, ox + w * 0.5, oy + top * tabH);
+                ctx.bezierCurveTo(ox + w * 0.58, oy + top * tabH, ox + w * 0.64, oy + top * tabH * 0.8, ox + w * 0.62, oy);
+                ctx.lineTo(ox + w, oy);
+            }
+
+            // Right edge
+            if (right === 0) {
+                ctx.lineTo(ox + w, oy + h);
+            } else {
+                ctx.lineTo(ox + w, oy + h * 0.38);
+                ctx.bezierCurveTo(ox + w + right * tabH * 0.8, oy + h * 0.36, ox + w + right * tabH, oy + h * 0.42, ox + w + right * tabH, oy + h * 0.5);
+                ctx.bezierCurveTo(ox + w + right * tabH, oy + h * 0.58, ox + w + right * tabH * 0.8, oy + h * 0.64, ox + w, oy + h * 0.62);
+                ctx.lineTo(ox + w, oy + h);
+            }
+
+            // Bottom edge
+            if (bottom === 0) {
+                ctx.lineTo(ox, oy + h);
+            } else {
+                ctx.lineTo(ox + w * 0.62, oy + h);
+                ctx.bezierCurveTo(ox + w * 0.64, oy + h + bottom * tabH * 0.8, ox + w * 0.58, oy + h + bottom * tabH, ox + w * 0.5, oy + h + bottom * tabH);
+                ctx.bezierCurveTo(ox + w * 0.42, oy + h + bottom * tabH, ox + w * 0.36, oy + h + bottom * tabH * 0.8, ox + w * 0.38, oy + h);
+                ctx.lineTo(ox, oy + h);
+            }
+
+            // Left edge
+            if (left === 0) {
+                ctx.lineTo(ox, oy);
+            } else {
+                ctx.lineTo(ox, oy + h * 0.62);
+                ctx.bezierCurveTo(ox + left * tabH * 0.8, oy + h * 0.64, ox + left * tabH, oy + h * 0.58, ox + left * tabH, oy + h * 0.5);
+                ctx.bezierCurveTo(ox + left * tabH, oy + h * 0.42, ox + left * tabH * 0.8, oy + h * 0.36, ox, oy + h * 0.38);
+                ctx.lineTo(ox, oy);
+            }
+
+            if (!forSVG) ctx.closePath();
+        }
+
+        function drawGridLinesSVG() {
+            gridSvg.setAttribute('viewBox', `0 0 ${boardWidth} ${boardHeight}`);
+            gridSvg.innerHTML = '';
+
+            for (let r = 0; r < rows; r++) {
+                for (let c = 0; c < cols; c++) {
+                    const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                    const dummyCtx = {
+                        pathData: '',
+                        moveTo(x, y) { this.pathData += `M ${x} ${y} `; },
+                        lineTo(x, y) { this.pathData += `L ${x} ${y} `; },
+                        bezierCurveTo(cp1x, cp1y, cp2x, cp2y, x, y) {
+                            this.pathData += `C ${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${x} ${y} `;
+                        },
+                        closePath() { this.pathData += 'Z '; }
+                    };
+
+                    generatePiecePath(dummyCtx, c, r, pieceWidth, pieceHeight, 0, true);
+                    path.setAttribute('d', dummyCtx.pathData);
+                    path.setAttribute('fill', 'none');
+                    path.setAttribute('stroke', 'rgba(255, 255, 255, 0.4)');
+                    path.setAttribute('stroke-dasharray', '3 3');
+                    path.setAttribute('stroke-width', '1.5');
+                    path.setAttribute('id', `grid-path-${c}-${r}`);
+                    gridSvg.appendChild(path);
+                }
+            }
+        }
+
+        function createPieces() {
+            pieces = [];
+            const pad = Math.max(pieceWidth, pieceHeight) * 0.35;
+
+            for (let r = 0; r < rows; r++) {
+                for (let c = 0; c < cols; c++) {
+                    const canvas = document.createElement('canvas');
+                    const cw = pieceWidth + pad * 2;
+                    const ch = pieceHeight + pad * 2;
+                    canvas.width = cw;
+                    canvas.height = ch;
+                    canvas.className = 'piece-canvas absolute pointer-events-auto';
+
+                    const ctx = canvas.getContext('2d');
+
+                    // Clip path
+                    generatePiecePath(ctx, c, r, pieceWidth, pieceHeight, pad, false);
+                    ctx.save();
+                    ctx.clip();
+
+                    // Draw image snippet
+                    const sx = (c * loadedImage.width) / cols;
+                    const sy = (r * loadedImage.height) / rows;
+                    const sw = loadedImage.width / cols;
+                    const sh = loadedImage.height / rows;
+
+                    ctx.drawImage(loadedImage, sx, sy, sw, sh, pad, pad, pieceWidth, pieceHeight);
+                    ctx.restore();
+
+                    // Border line for unplaced pieces
+                    generatePiecePath(ctx, c, r, pieceWidth, pieceHeight, pad, false);
+                    ctx.strokeStyle = 'rgba(255, 255, 255, 0.7)';
+                    ctx.lineWidth = 2;
+                    ctx.stroke();
+
+                    const pieceObj = {
+                        id: `p_${r}_${c}`,
+                        col: c,
+                        row: r,
+                        element: canvas,
+                        isPlaced: false,
+                        padding: pad,
+                        correctX: c * pieceWidth,
+                        correctY: r * pieceHeight
+                    };
+
+                    enableDrag(pieceObj);
+                    pieces.push(pieceObj);
+                }
+            }
+        }
+
+        function scatterUnplacedPieces() {
+            const boardRect = boardContainer.getBoundingClientRect();
+
+            const pad = Math.max(pieceWidth, pieceHeight) * 0.35;
+            const fullPieceW = pieceWidth + pad * 2;
+            const fullPieceH = pieceHeight + pad * 2;
+
+            // 보드 주변 및 화면 가장자리 여백
+            const safeMargin = 15;
+            const safeBoardLeft = boardRect.left - safeMargin;
+            const safeBoardRight = boardRect.right + safeMargin;
+            const safeBoardTop = boardRect.top - safeMargin;
+            const safeBoardBottom = boardRect.bottom + safeMargin;
+
+            // 안겹치도록 그리드 셀 크기를 조각 크기보다 넉넉하게 설정
+            const stepX = fullPieceW * 1.1;
+            const stepY = fullPieceH * 1.1;
+
+            const gridSlots = [];
+
+            // 1. 보드 좌측 영역
+            for (let x = 10; x + fullPieceW <= safeBoardLeft; x += stepX) {
+                for (let y = 10; y + fullPieceH <= window.innerHeight - 10; y += stepY) {
+                    gridSlots.push({ x, y });
+                }
+            }
+
+            // 2. 보드 우측 영역
+            for (let x = safeBoardRight; x + fullPieceW <= window.innerWidth - 10; x += stepX) {
+                for (let y = 10; y + fullPieceH <= window.innerHeight - 10; y += stepY) {
+                    gridSlots.push({ x, y });
+                }
+            }
+
+            // 3. 보드 상단 영역
+            for (let y = 10; y + fullPieceH <= safeBoardTop; y += stepY) {
+                for (let x = Math.max(10, safeBoardLeft); x + fullPieceW <= Math.min(window.innerWidth - 10, safeBoardRight); x += stepX) {
+                    gridSlots.push({ x, y });
+                }
+            }
+
+            // 4. 보드 하단 영역
+            for (let y = safeBoardBottom; y + fullPieceH <= window.innerHeight - 10; y += stepY) {
+                for (let x = Math.max(10, safeBoardLeft); x + fullPieceW <= Math.min(window.innerWidth - 10, safeBoardRight); x += stepX) {
+                    gridSlots.push({ x, y });
+                }
+            }
+
+            // 슬롯을 랜덤으로 정렬
+            gridSlots.sort(() => Math.random() - 0.5);
+
+            let slotIdx = 0;
+            pieces.forEach(p => {
+                if (!p.isPlaced) {
+                    scatterLayer.appendChild(p.element);
+
+                    let targetX, targetY;
+
+                    if (slotIdx < gridSlots.length) {
+                        targetX = gridSlots[slotIdx].x;
+                        targetY = gridSlots[slotIdx].y;
+                        slotIdx++;
+                    } else {
+                        // 슬롯 부족 시 화면 좌/우 측면 슬롯에 균등 격자로 배치
+                        const isLeft = Math.random() < 0.5;
+                        const minX = isLeft ? 5 : Math.max(5, safeBoardRight);
+                        const maxX = isLeft ? Math.max(5, safeBoardLeft - fullPieceW) : window.innerWidth - fullPieceW - 5;
+                        
+                        targetX = minX + Math.random() * Math.max(0, maxX - minX);
+                        targetY = 5 + Math.random() * Math.max(0, window.innerHeight - fullPieceH - 10);
+                    }
+
+                    p.element.style.left = `${Math.max(5, Math.min(window.innerWidth - fullPieceW - 5, targetX))}px`;
+                    p.element.style.top = `${Math.max(5, Math.min(window.innerHeight - fullPieceH - 10, targetY))}px`;
+                }
+            });
+        }
+
+        function enableDrag(piece) {
+            const el = piece.element;
+            let startX, startY, initialLeft, initialTop;
+            let isDragging = false;
+
+            const onStart = (e) => {
+                if (piece.isPlaced) return;
+                isDragging = true;
+                const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+                const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+
+                startX = clientX;
+                startY = clientY;
+
+                const rect = el.getBoundingClientRect();
+                initialLeft = rect.left;
+                initialTop = rect.top;
+
+                el.style.zIndex = '1000';
+            };
+
+            const onMove = (e) => {
+                if (!isDragging) return;
+                const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+                const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+
+                const dx = clientX - startX;
+                const dy = clientY - startY;
+
+                el.style.left = `${initialLeft + dx}px`;
+                el.style.top = `${initialTop + dy}px`;
+            };
+
+            const onEnd = () => {
+                if (!isDragging) return;
+                isDragging = false;
+                el.style.zIndex = '30';
+
+                checkSnap(piece);
+            };
+
+            el.addEventListener('mousedown', onStart);
+            document.addEventListener('mousemove', onMove);
+            document.addEventListener('mouseup', onEnd);
+
+            el.addEventListener('touchstart', onStart, { passive: false });
+            document.addEventListener('touchmove', onMove, { passive: false });
+            document.addEventListener('touchend', onEnd);
+        }
+
+        function checkSnap(piece) {
+            const boardRect = boardContainer.getBoundingClientRect();
+            const pieceRect = piece.element.getBoundingClientRect();
+
+            // Calculate piece content top-left relative to board
+            const pieceContentX = pieceRect.left + piece.padding - boardRect.left;
+            const pieceContentY = pieceRect.top + piece.padding - boardRect.top;
+
+            const snapTolerance = Math.min(pieceWidth, pieceHeight) * 0.45;
+
+            const diffX = Math.abs(pieceContentX - piece.correctX);
+            const diffY = Math.abs(pieceContentY - piece.correctY);
+
+            if (diffX < snapTolerance && diffY < snapTolerance) {
+                // Snap to position
+                piece.isPlaced = true;
+                placedCount++;
+
+                // Move from scatter layer to board layer
+                boardPiecesLayer.appendChild(piece.element);
+                piece.element.classList.add('placed');
+
+                piece.element.style.left = `${piece.correctX - piece.padding}px`;
+                piece.element.style.top = `${piece.correctY - piece.padding}px`;
+
+                // Remove border stroke and clear canvas shadow for placed piece
+                const ctx = piece.element.getContext('2d');
+                ctx.clearRect(0, 0, piece.element.width, piece.element.height);
+
+                ctx.save();
+                generatePiecePath(ctx, piece.col, piece.row, pieceWidth, pieceHeight, piece.padding, false);
+                ctx.clip();
+
+                const sx = (piece.col * loadedImage.width) / cols;
+                const sy = (piece.row * loadedImage.height) / rows;
+                const sw = loadedImage.width / cols;
+                const sh = loadedImage.height / rows;
+
+                ctx.drawImage(loadedImage, sx, sy, sw, sh, piece.padding, piece.padding, pieceWidth, pieceHeight);
+                ctx.restore();
+
+                // Hide SVG grid line for this cell
+                const svgPath = document.getElementById(`grid-path-${piece.col}-${piece.row}`);
+                if (svgPath) svgPath.style.display = 'none';
+
+                AudioEngine.playSnap();
+                updateProgress();
+
+                if (placedCount === pieces.length) {
+                    endGame(true);
+                }
+            } else {
+                AudioEngine.playError();
+            }
+        }
+
+        function startTimer() {
+            clearInterval(timerInterval);
+            timerInterval = setInterval(() => {
+                secondsElapsed++;
+
+                if (isLimitedTime) {
+                    const remaining = timeLimitSeconds - secondsElapsed;
+                    if (remaining <= 0) {
+                        timerDisplay.textContent = "00:00";
+                        endGame(false);
+                        return;
+                    }
+                    timerDisplay.textContent = formatTime(remaining);
+                } else {
+                    timerDisplay.textContent = formatTime(secondsElapsed);
+                }
+            }, 1000);
+        }
+
+        function updateProgress() {
+            progressDisplay.textContent = `${placedCount} / ${cols * rows}`;
+        }
+
+        function endGame(isWin) {
+            clearInterval(timerInterval);
+            isGameActive = false;
+
+            if (isWin) {
+                AudioEngine.playWin();
+                confetti({
+                    particleCount: 120,
+                    spread: 80,
+                    origin: { y: 0.6 }
+                });
+
+                modalIconContainer.className = "w-16 h-16 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center mx-auto mb-3 text-3xl border border-emerald-500/40";
+                modalIconContainer.innerHTML = '<i class="fa-solid fa-trophy"></i>';
+                modalTitle.textContent = "퍼즐 완성!";
+                modalDesc.textContent = "축하합니다! 성공적으로 모든 퍼즐을 맞추셨습니다.";
+                
+                nicknameInputContainer.classList.remove('hidden');
+                playerNameInput.value = '';
+            } else {
+                modalIconContainer.className = "w-16 h-16 rounded-full bg-rose-500/20 text-rose-400 flex items-center justify-center mx-auto mb-3 text-3xl border border-rose-500/40";
+                modalIconContainer.innerHTML = '<i class="fa-solid fa-hourglass-end"></i>';
+                modalTitle.textContent = "시간 초과!";
+                modalDesc.textContent = "제한시간 내에 퍼즐을 완성하지 못했습니다.";
+                
+                nicknameInputContainer.classList.add('hidden');
+            }
+
+            finalTime.textContent = formatTime(secondsElapsed);
+            finalPieces.textContent = `${placedCount} / ${pieces.length}`;
+
+            showModal();
+        }
+
+        function showModal() {
+            modalOverlay.classList.remove('pointer-events-none', 'opacity-0');
+            modalContent.classList.remove('scale-95');
+            modalContent.classList.add('scale-100');
+        }
+
+        function hideModal() {
+            modalOverlay.classList.add('pointer-events-none', 'opacity-0');
+            modalContent.classList.remove('scale-100');
+            modalContent.classList.add('scale-95');
+        }
+
+        function resetToConfig() {
+            clearInterval(timerInterval);
+            isGameActive = false;
+            gameScreen.classList.add('hidden');
+            gameStats.classList.add('hidden');
+            configScreen.classList.remove('hidden');
+        }
+
+        // Window Resize Responsiveness
+        window.addEventListener('resize', () => {
+            if (isGameActive && loadedImage) {
+                setupBoardDimensions();
+                drawGridLinesSVG();
+                pieces.forEach(p => {
+                    p.correctX = p.col * pieceWidth;
+                    p.correctY = p.row * pieceHeight;
+                    if (p.isPlaced) {
+                        p.element.style.left = `${p.correctX - p.padding}px`;
+                        p.element.style.top = `${p.correctY - p.padding}px`;
+                    }
+                });
+                scatterUnplacedPieces();
+            }
+        });
+    </script>
+</body>
+</html>
